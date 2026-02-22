@@ -1,0 +1,205 @@
+.rubric-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-4);
+}
+
+.rp-header { padding: 0; }
+.rp-title { font-size: 1.25rem; font-weight: 700; margin-bottom: var(--s-2); }
+.rp-desc { color: var(--color-text-2); font-size: 0.9375rem; }
+
+.rp-title-input {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: var(--s-2);
+}
+
+.rp-warning {
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.rp-settings {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.rp-settings .form-select { max-width: 180px; }
+
+.rp-criteria {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+/* Criterion editor */
+.rp-criterion {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition: border-color var(--t-fast);
+}
+.rp-criterion.expanded { border-color: var(--color-primary); }
+
+.rp-criterion-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  cursor: pointer;
+  background: var(--color-surface);
+  user-select: none;
+}
+
+.rp-criterion-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rp-criterion-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rp-criterion-title { font-weight: 600; font-size: 0.9375rem; }
+.rp-criterion-weight { font-size: 0.8125rem; color: var(--color-muted); }
+
+.rp-criterion-title-input {
+  font-weight: 600;
+  padding: var(--s-1) var(--s-2);
+  min-height: 36px;
+  font-size: 0.9375rem;
+}
+
+.rp-weight-input {
+  width: 56px;
+  padding: var(--s-1) var(--s-2);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--r-sm);
+  font-size: 0.9375rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: right;
+}
+
+.rp-expand-icon {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.rp-criterion-body {
+  padding: var(--s-3);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+
+/* Descriptors */
+.rp-descriptors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.rp-descriptor-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+
+.rp-desc-level {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.rp-desc-input {
+  flex: 1;
+  padding: var(--s-2);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--r-sm);
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-text);
+  resize: vertical;
+  min-height: 56px;
+}
+.rp-desc-input:focus { outline: none; border-color: var(--color-primary); }
+
+.rp-desc-text {
+  flex: 1;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  padding-top: 4px;
+  color: var(--color-text-2);
+}
+
+/* Weight bars */
+.rp-weights {
+  background: var(--color-surface-2);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.rp-weight-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.rp-weight-label {
+  font-size: 0.8125rem;
+  min-width: 100px;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-2);
+}
+
+.rp-weight-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: var(--color-border);
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+
+.rp-weight-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--r-full);
+  transition: width var(--t-med);
+}
+
+.rp-weight-pct {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: right;
+  color: var(--color-text-2);
+}

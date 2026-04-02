@@ -1,0 +1,10 @@
+name = "cuaderno-profe-sync"
+main = "src/worker.js"
+compatibility_date = "2026-04-02"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cuaderno_profe_sync"
+database_id = "REEMPLAZAR_CON_TU_DATABASE_ID"
+migrations_dir = "migrations"

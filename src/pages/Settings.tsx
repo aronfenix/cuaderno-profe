@@ -43,12 +43,12 @@ export function Settings() {
 
     try {
       if (action === 'status') {
-        const status = await getCloudStatus(cloud.spaceId.trim())
+        const status = await getCloudStatus(cloud.spaceId.trim(), cloud.apiBaseUrl)
         setCloudMessage(`Servidor OK. Ultima actualizacion: ${new Date(status.updatedAt).toLocaleString('es-ES')}`)
       }
 
       if (action === 'upload') {
-        const status = await uploadCurrentBackup(cloud.spaceId.trim(), cloud.secret)
+        const status = await uploadCurrentBackup(cloud.spaceId.trim(), cloud.secret, cloud.apiBaseUrl)
         setCloudMessage(`Copia subida correctamente. Fecha servidor: ${new Date(status.updatedAt).toLocaleString('es-ES')}`)
       }
 
@@ -59,7 +59,7 @@ export function Settings() {
           setWorking(false)
           return
         }
-        const status = await restoreBackupFromCloud(cloud.spaceId.trim(), cloud.secret)
+        const status = await restoreBackupFromCloud(cloud.spaceId.trim(), cloud.secret, cloud.apiBaseUrl)
         setCloudMessage(`Datos restaurados desde servidor (${new Date(status.updatedAt).toLocaleString('es-ES')}). Recarga la app para ver todo actualizado.`)
       }
     } catch (error) {
@@ -151,6 +151,19 @@ export function Settings() {
 
       <div className="card" style={{ marginBottom: 'var(--s-4)' }}>
         <h2 style={{ fontSize: '1rem', marginBottom: 'var(--s-4)' }}>Sincronizacion con servidor</h2>
+
+        <div className="form-group">
+          <label className="form-label">URL base del servidor (opcional)</label>
+          <input
+            className="form-input"
+            value={cloud.apiBaseUrl}
+            onChange={event => setCloud(prev => ({ ...prev, apiBaseUrl: event.target.value }))}
+            placeholder="https://cuaderno-profe-sync.tuusuario.workers.dev"
+          />
+          <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginTop: 'var(--s-1)' }}>
+            Si lo dejas vacio, usa el mismo dominio de la app. Para backend externo gratis (Cloudflare), pega aqui su URL.
+          </p>
+        </div>
 
         <div className="form-group">
           <label className="form-label">Espacio docente</label>

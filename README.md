@@ -9,12 +9,11 @@ Version evolucionada para uso docente diario:
 
 ## Importante: persistencia real multi-dispositivo
 
-Para usar el cuaderno en varios dispositivos/navegadores y mantener los datos, **no basta con GitHub Pages**.
-Necesitas ejecutar tambien el servidor Node (`server.js`) con almacenamiento persistente (`DATA_DIR`).
+Para usar el cuaderno en varios dispositivos/navegadores y mantener los datos, **necesitas backend de sincronizacion**.
 
-- Frontend + API pueden ir en el mismo despliegue.
-- El fichero de sincronizacion se guarda en `DATA_DIR/cloud-sync.json`.
-- Si `DATA_DIR` no es persistente, los datos se perderan al reiniciar el servicio.
+Tienes dos opciones:
+- `Opcion gratis recomendada`: Cloudflare Worker + D1 (`cloudflare-sync/`).
+- `Opcion Node clasica`: `server.js` con `DATA_DIR` persistente.
 
 ## 1) Arranque rapido
 
@@ -73,16 +72,30 @@ git commit -m "Cuaderno Profe x100 listo para produccion"
 git push origin main
 ```
 
-### Render (recomendado)
-Este repo incluye `render.yaml`.
+### Opcion gratis recomendada: Cloudflare (sin pagar)
 
-Despliegue directo:
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/aronfenix/cuaderno-profe)
+1. Crea una cuenta en Cloudflare y autentica `wrangler` (`npm i -g wrangler`, `wrangler login`).
+2. En `cloudflare-sync/`, crea la base D1:
+```bash
+wrangler d1 create cuaderno_profe_sync
+```
+3. Copia el `database_id` devuelto y pegalo en `cloudflare-sync/wrangler.toml`.
+4. Aplica migraciones:
+```bash
+wrangler d1 migrations apply cuaderno_profe_sync --remote --config cloudflare-sync/wrangler.toml
+```
+5. Despliega el Worker:
+```bash
+wrangler deploy --config cloudflare-sync/wrangler.toml
+```
+6. Copia la URL `*.workers.dev` resultante.
+7. En la app (`Ajustes > Sincronizacion`), pega esa URL en `URL base del servidor`, guarda y usa `Subir copia local`.
 
-1. Conecta el repo en Render.
-2. Crea Web Service desde `render.yaml`.
-3. Verifica que monta disco persistente en `/var/data`.
-4. Usa la URL publica de Render en todos tus dispositivos.
+Con eso la sincronizacion queda persistente y disponible en cualquier dispositivo.
+
+### Opcion alternativa: Node + Render/Railway/Fly
+
+Si prefieres `server.js`, recuerda que necesitas almacenamiento persistente (`DATA_DIR`) para no perder el backup.
 
 ## 4) Formato de importacion avanzada
 

@@ -10,6 +10,12 @@
     <meta name="apple-mobile-web-app-title" content="Cuaderno" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>Cuaderno del Profe</title>
+    <script>
+      if (window.location.protocol === 'file:') {
+        const hash = window.location.hash || ''
+        window.location.replace('./dist/index.html' + hash)
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

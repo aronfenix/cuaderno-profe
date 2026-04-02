@@ -44,6 +44,14 @@ export function useAssessmentDetail(assessmentId: number) {
     [assessment?.groupId]
   )
 
+  const teamArrangement = useLiveQuery(
+    async () => {
+      if (!assessment?.teamArrangementId) return undefined
+      return db.teamArrangements.get(assessment.teamArrangementId)
+    },
+    [assessment?.teamArrangementId]
+  )
+
   return {
     assessment,
     snapshot,
@@ -51,6 +59,7 @@ export function useAssessmentDetail(assessmentId: number) {
     results: results ?? [],
     subject,
     group,
+    teamArrangement,
     isLoading: assessment === undefined
   }
 }

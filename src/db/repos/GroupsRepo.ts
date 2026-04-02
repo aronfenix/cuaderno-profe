@@ -10,7 +10,24 @@ export const GroupsRepo = {
   },
 
   async getActiveYear(): Promise<AcademicYear | undefined> {
-    return db.academicYears.where('isActive').equals(1).first()
+    const active = await db.academicYears.where('isActive').equals(1).first()
+    if (active) return active
+
+    const years = await db.academicYears.toArray()
+    return years.sort((a, b) => b.updatedAt - a.updatedAt || b.name.localeCompare(a.name))[0]
+  },
+
+  async getResolvedActiveYear(): Promise<AcademicYear | undefined> {
+    const year = await this.getActiveYear()
+    if (year?.id === undefined) return year
+
+    if (!year.isActive) {
+      await db.academicYears.toCollection().modify({ isActive: false })
+      await db.academicYears.update(year.id, { isActive: true, updatedAt: Date.now() })
+      return { ...year, isActive: true }
+    }
+
+    return year
   },
 
   async createYear(name: string): Promise<number> {
@@ -36,6 +53,10 @@ export const GroupsRepo = {
     return db.classGroups.where('yearId').equals(yearId).sortBy('name')
   },
 
+  async getAllGroups(): Promise<ClassGroup[]> {
+    return db.classGroups.orderBy('name').toArray()
+  },
+
   async createGroup(name: string, yearId: number): Promise<number> {
     return db.classGroups.add({
       name,
@@ -58,6 +79,10 @@ export const GroupsRepo = {
 
   async getSubjectsByYear(yearId: number): Promise<Subject[]> {
     return db.subjects.where('yearId').equals(yearId).sortBy('name')
+  },
+
+  async getAllSubjects(): Promise<Subject[]> {
+    return db.subjects.orderBy('name').toArray()
   },
 
   async createSubject(name: string, yearId: number): Promise<number> {

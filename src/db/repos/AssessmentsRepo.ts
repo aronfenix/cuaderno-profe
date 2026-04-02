@@ -20,6 +20,7 @@ export const AssessmentsRepo = {
     date: string
     groupId: number
     subjectId: number
+    teamArrangementId?: number | null
     templateId: number
   }): Promise<{ assessmentId: number; snapshotId: number }> {
     const template = await db.templates.get(data.templateId)
@@ -36,6 +37,7 @@ export const AssessmentsRepo = {
 
       const assessmentId = await db.assessments.add({
         ...data,
+        teamArrangementId: data.teamArrangementId ?? null,
         snapshotId: snapshotId as number,
         status: 'active',
         deviceId: getDeviceId(),
@@ -52,6 +54,14 @@ export const AssessmentsRepo = {
 
   async updateStatus(id: number, status: Assessment['status']): Promise<void> {
     await db.assessments.update(id, { status, syncStatus: 'pending', updatedAt: Date.now() })
+  },
+
+  async updateTeamArrangement(id: number, teamArrangementId: number | null): Promise<void> {
+    await db.assessments.update(id, {
+      teamArrangementId,
+      syncStatus: 'pending',
+      updatedAt: Date.now(),
+    })
   },
 
   async delete(id: number): Promise<void> {

@@ -9,6 +9,10 @@ export interface BackupPackage {
   students: unknown[]
   enrollments: unknown[]
   subjects: unknown[]
+  studentNotes?: unknown[]
+  teamArrangements?: unknown[]
+  teams?: unknown[]
+  teamMemberships?: unknown[]
   templates: InstrumentTemplate[]
   assessments: unknown[]
   snapshots: unknown[]
@@ -19,6 +23,7 @@ export interface BackupPackage {
 export async function exportFullBackup(): Promise<BackupPackage> {
   const [
     academicYears, classGroups, students, enrollments, subjects,
+    studentNotes, teamArrangements, teams, teamMemberships,
     templates, assessments, snapshots, results, criterionScores
   ] = await Promise.all([
     db.academicYears.toArray(),
@@ -26,6 +31,10 @@ export async function exportFullBackup(): Promise<BackupPackage> {
     db.students.toArray(),
     db.enrollments.toArray(),
     db.subjects.toArray(),
+    db.studentNotes.toArray(),
+    db.teamArrangements.toArray(),
+    db.teams.toArray(),
+    db.teamMemberships.toArray(),
     db.templates.toArray(),
     db.assessments.toArray(),
     db.snapshots.toArray(),
@@ -37,6 +46,7 @@ export async function exportFullBackup(): Promise<BackupPackage> {
     version: '1.0',
     exportedAt: Date.now(),
     academicYears, classGroups, students, enrollments, subjects,
+    studentNotes, teamArrangements, teams, teamMemberships,
     templates, assessments, snapshots, results, criterionScores
   }
 }
@@ -63,4 +73,62 @@ export function parseTemplateJSON(raw: string): InstrumentTemplate[] {
     'title' in (t as object) &&
     'criteria' in (t as object)
   )
+}
+
+export function isBackupPackage(value: unknown): value is BackupPackage {
+  if (!value || typeof value !== 'object') return false
+  const backup = value as Partial<BackupPackage>
+  return (
+    backup.version === '1.0' &&
+    Array.isArray(backup.academicYears) &&
+    Array.isArray(backup.classGroups) &&
+    Array.isArray(backup.students) &&
+    Array.isArray(backup.enrollments) &&
+    Array.isArray(backup.subjects) &&
+    Array.isArray(backup.templates) &&
+    Array.isArray(backup.assessments) &&
+    Array.isArray(backup.snapshots) &&
+    Array.isArray(backup.results) &&
+    Array.isArray(backup.criterionScores)
+  )
+}
+
+export async function importFullBackup(backup: BackupPackage): Promise<void> {
+  if (!isBackupPackage(backup)) {
+    throw new Error('Formato de backup no valido')
+  }
+
+  await db.transaction('rw', db.tables, async () => {
+    await Promise.all([
+      db.academicYears.clear(),
+      db.classGroups.clear(),
+      db.students.clear(),
+      db.enrollments.clear(),
+      db.subjects.clear(),
+      db.studentNotes.clear(),
+      db.teamArrangements.clear(),
+      db.teams.clear(),
+      db.teamMemberships.clear(),
+      db.templates.clear(),
+      db.assessments.clear(),
+      db.snapshots.clear(),
+      db.results.clear(),
+      db.criterionScores.clear(),
+    ])
+
+    if (backup.academicYears.length) await db.academicYears.bulkAdd(backup.academicYears as any[])
+    if (backup.classGroups.length) await db.classGroups.bulkAdd(backup.classGroups as any[])
+    if (backup.students.length) await db.students.bulkAdd(backup.students as any[])
+    if (backup.enrollments.length) await db.enrollments.bulkAdd(backup.enrollments as any[])
+    if (backup.subjects.length) await db.subjects.bulkAdd(backup.subjects as any[])
+    if ((backup.studentNotes ?? []).length) await db.studentNotes.bulkAdd((backup.studentNotes ?? []) as any[])
+    if ((backup.teamArrangements ?? []).length) await db.teamArrangements.bulkAdd((backup.teamArrangements ?? []) as any[])
+    if ((backup.teams ?? []).length) await db.teams.bulkAdd((backup.teams ?? []) as any[])
+    if ((backup.teamMemberships ?? []).length) await db.teamMemberships.bulkAdd((backup.teamMemberships ?? []) as any[])
+    if (backup.templates.length) await db.templates.bulkAdd(backup.templates as any[])
+    if (backup.assessments.length) await db.assessments.bulkAdd(backup.assessments as any[])
+    if (backup.snapshots.length) await db.snapshots.bulkAdd(backup.snapshots as any[])
+    if (backup.results.length) await db.results.bulkAdd(backup.results as any[])
+    if (backup.criterionScores.length) await db.criterionScores.bulkAdd(backup.criterionScores as any[])
+  })
 }

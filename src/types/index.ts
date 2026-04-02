@@ -7,6 +7,15 @@ export type AssessmentStatus = 'draft' | 'active' | 'closed'
 export type ResultStatus = 'pending' | 'in_progress' | 'completed'
 export type LLMStudioState = 'intake' | 'generate' | 'iterate' | 'save'
 export type TemplateSource = 'ai' | 'manual'
+export type StudentNoteType =
+  | 'academica'
+  | 'conducta'
+  | 'familia'
+  | 'tutoria'
+  | 'adaptacion'
+  | 'incidencia'
+  | 'fortaleza'
+  | 'seguimiento'
 
 // ── Rubric internals ──────────────────────────────────────────────────────────
 
@@ -54,6 +63,20 @@ export interface Student {
   updatedAt: number
 }
 
+export interface StudentNote {
+  id?: number
+  studentId: number
+  subjectId: number | null
+  groupId: number | null
+  noteType: StudentNoteType
+  text: string
+  isResolved: boolean
+  deviceId: string
+  syncStatus: SyncStatus
+  createdAt: number
+  updatedAt: number
+}
+
 export interface Enrollment {
   id?: number
   studentId: number
@@ -68,6 +91,39 @@ export interface Subject {
   name: string
   yearId: number
   deviceId: string
+  syncStatus: SyncStatus
+  updatedAt: number
+}
+
+export interface TeamArrangement {
+  id?: number
+  groupId: number
+  yearId: number
+  name: string
+  isArchived: boolean
+  deviceId: string
+  syncStatus: SyncStatus
+  updatedAt: number
+}
+
+export interface Team {
+  id?: number
+  groupId: number
+  yearId: number
+  arrangementId: number | null
+  name: string
+  color: string
+  isArchived: boolean
+  deviceId: string
+  syncStatus: SyncStatus
+  updatedAt: number
+}
+
+export interface TeamMembership {
+  id?: number
+  teamId: number
+  studentId: number
+  role: string
   syncStatus: SyncStatus
   updatedAt: number
 }
@@ -95,6 +151,7 @@ export interface Assessment {
   date: string        // ISO date "2025-03-15"
   groupId: number
   subjectId: number
+  teamArrangementId: number | null
   templateId: number
   snapshotId: number
   status: AssessmentStatus

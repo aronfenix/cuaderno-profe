@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/schema'
 import { AssessmentsRepo } from '../db/repos/AssessmentsRepo'
+import type { TeamArrangement } from '../types'
 
 export function NewAssessment() {
   const navigate = useNavigate()
@@ -10,6 +11,7 @@ export function NewAssessment() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [groupId, setGroupId] = useState('')
   const [subjectId, setSubjectId] = useState('')
+  const [teamArrangementId, setTeamArrangementId] = useState('')
   const [templateId, setTemplateId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -17,6 +19,16 @@ export function NewAssessment() {
   const groups = useLiveQuery(() => db.classGroups.orderBy('name').toArray(), [])
   const subjects = useLiveQuery(() => db.subjects.orderBy('name').toArray(), [])
   const templates = useLiveQuery(() => db.templates.orderBy('updatedAt').reverse().toArray(), [])
+  const arrangements = useLiveQuery(
+    () => groupId
+      ? db.teamArrangements
+        .where('groupId')
+        .equals(Number(groupId))
+        .and(arrangement => !arrangement.isArchived)
+        .sortBy('name')
+      : Promise.resolve([] as TeamArrangement[]),
+    [groupId]
+  )
 
   const canSubmit = title && groupId && subjectId && templateId
 
@@ -31,6 +43,7 @@ export function NewAssessment() {
         date,
         groupId: Number(groupId),
         subjectId: Number(subjectId),
+        teamArrangementId: teamArrangementId ? Number(teamArrangementId) : null,
         templateId: Number(templateId),
       })
       navigate(`/assessments/${assessmentId}`)
@@ -77,9 +90,33 @@ export function NewAssessment() {
               No hay grupos. <Link to="/setup">Crea uno primero.</Link>
             </p>
           ) : (
-            <select className="form-select" value={groupId} onChange={e => setGroupId(e.target.value)} required>
+            <select
+              className="form-select"
+              value={groupId}
+              onChange={e => {
+                setGroupId(e.target.value)
+                setTeamArrangementId('')
+              }}
+              required
+            >
               <option value="">Seleccionar grupo...</option>
               {groups?.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Agrupacion de clase (opcional)</label>
+          {!groupId ? (
+            <p style={{ color: 'var(--color-muted)', fontSize: '0.875rem' }}>
+              Primero selecciona grupo para elegir una agrupacion.
+            </p>
+          ) : (
+            <select className="form-select" value={teamArrangementId} onChange={e => setTeamArrangementId(e.target.value)}>
+              <option value="">Sin agrupacion fija</option>
+              {arrangements?.map(arrangement => (
+                <option key={arrangement.id} value={arrangement.id}>{arrangement.name}</option>
+              ))}
             </select>
           )}
         </div>

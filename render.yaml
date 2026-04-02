@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: cuaderno-profe-x100
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: ANTHROPIC_API_KEY
+        sync: false
+    disk:
+      name: cuaderno-data
+      mountPath: /var/data
+      sizeGB: 1

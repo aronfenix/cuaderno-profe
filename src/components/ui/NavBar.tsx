@@ -1,10 +1,11 @@
-import { NavLink } from 'react-router-dom'
+﻿import { NavLink } from 'react-router-dom'
 import './NavBar.css'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Inicio', icon: '🏠', exact: true },
+  { to: '/insights', label: 'Analitica', icon: '📈', exact: false },
   { to: '/assessments', label: 'Evaluar', icon: '✅', exact: false },
-  { to: '/library', label: 'Rúbricas', icon: '📋', exact: false },
+  { to: '/library', label: 'Rubricas', icon: '📋', exact: false },
   { to: '/setup', label: 'Grupos', icon: '👥', exact: false },
 ]
 

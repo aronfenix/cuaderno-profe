@@ -1,9 +1,11 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useRef, useState, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useGrading } from '../hooks/useGrading'
 import { DescriptorModal } from '../components/rubric/DescriptorModal'
 import { db } from '../db/schema'
+import { TeamsRepo } from '../db/repos/TeamsRepo'
+import { ResultsRepo } from '../db/repos/ResultsRepo'
 import type { Criterion, Score } from '../types'
 import { formatGrade } from '../lib/gradeCalculator'
 import '../styles/grade-screen.css'
@@ -23,9 +25,27 @@ export function GradeScreen() {
   const [commentText, setCommentText] = useState('')
   const [descriptorCriterion, setDescriptorCriterion] = useState<Criterion | null>(null)
   const [finalizing, setFinalizing] = useState(false)
+  const [applyingTeam, setApplyingTeam] = useState(false)
   const criterionRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   const student = useLiveQuery(() => db.students.get(studentIdNum), [studentIdNum])
+  const assessment = useLiveQuery(() => db.assessments.get(assessmentId), [assessmentId])
+
+  const team = useLiveQuery(
+    async () => {
+      if (!assessment?.teamArrangementId) return undefined
+      return TeamsRepo.getTeamByStudentInArrangement(assessment.teamArrangementId, studentIdNum)
+    },
+    [assessment?.teamArrangementId, studentIdNum]
+  )
+
+  const teamMembers = useLiveQuery(
+    async () => {
+      if (!team?.id) return []
+      return TeamsRepo.getMembers(team.id)
+    },
+    [team?.id]
+  )
 
   // Find next student for quick navigation
   const nextStudentId = useLiveQuery(async () => {
@@ -95,6 +115,33 @@ export function GradeScreen() {
     navigate(`/assessments/${assessmentId}/grade/${nextStudentId}`, { replace: true })
   }
 
+  const handleApplyToTeam = async () => {
+    if (applyingTeam || !team?.id || answeredCount === 0) return
+
+    const members = (teamMembers ?? []).filter(member => member.id !== studentIdNum)
+    if (members.length === 0) return
+
+    const confirmed = window.confirm(`Aplicar esta evaluacion y comentario a ${members.length} alumnos del ${team.name}?`)
+    if (!confirmed) return
+
+    setApplyingTeam(true)
+    try {
+      const grade = gradeResult?.grade1to10 ?? null
+      for (const member of members) {
+        const target = await ResultsRepo.getOrCreate(assessmentId, member.id!)
+        if (!target.id) continue
+
+        for (const score of scores) {
+          await ResultsRepo.upsertScore(target.id, score.criterionId, score.score)
+        }
+
+        await ResultsRepo.finalize(target.id, grade, commentText)
+      }
+    } finally {
+      setApplyingTeam(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="grade-screen">
@@ -105,6 +152,7 @@ export function GradeScreen() {
 
   const grade = gradeResult?.grade1to10
   const isCompleted = result?.status === 'completed'
+  const extraTeamMembers = (teamMembers ?? []).filter(member => member.id !== studentIdNum)
 
   return (
     <div className="grade-screen">
@@ -118,6 +166,7 @@ export function GradeScreen() {
           <div className="grade-progress">
             {answeredCount}/{criteria.length} criterios
             {gradeResult?.naCount ? ` · ${gradeResult.naCount} N/A` : ''}
+            {team?.name ? ` · ${team.name}` : ''}
           </div>
         </div>
         {grade !== null && grade !== undefined && (
@@ -127,6 +176,12 @@ export function GradeScreen() {
 
       {/* Criteria */}
       <main className="criteria-list">
+        <div style={{ display: 'flex', gap: 'var(--s-2)', marginBottom: 'var(--s-3)', flexWrap: 'wrap' }}>
+          <Link to={`/students/${studentIdNum}`} className="btn btn-secondary" style={{ textDecoration: 'none' }}>
+            Ficha del alumno
+          </Link>
+        </div>
+
         {criteria.map((criterion, index) => {
           const currentScore = scoreMap.get(criterion.id)
           const hasScore = currentScore !== undefined
@@ -215,6 +270,19 @@ export function GradeScreen() {
 
       {/* Footer */}
       <footer className="grade-footer">
+        {team?.name && extraTeamMembers.length > 0 && (
+          <button
+            className="btn btn-secondary btn-large"
+            onClick={handleApplyToTeam}
+            disabled={applyingTeam || answeredCount === 0}
+            style={{ marginBottom: 'var(--s-2)' }}
+          >
+            {applyingTeam
+              ? 'Aplicando al equipo...'
+              : `Aplicar a ${extraTeamMembers.length} companeros de ${team.name}`}
+          </button>
+        )}
+
         {isCompleted && nextStudentId && (
           <button
             className="btn btn-secondary btn-large"

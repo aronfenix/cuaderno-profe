@@ -1,55 +1,75 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/schema'
 
 export function Dashboard() {
-  const recentAssessments = useLiveQuery(() =>
-    db.assessments.orderBy('updatedAt').reverse().limit(5).toArray(), []
+  const [subjectFilter, setSubjectFilter] = useState('all')
+
+  const recentAssessments = useLiveQuery(
+    () => db.assessments.orderBy('updatedAt').reverse().toArray(),
+    []
   )
+  const subjects = useLiveQuery(() => db.subjects.orderBy('name').toArray(), [])
 
   const stats = useLiveQuery(async () => {
-    const [students, templates, assessments] = await Promise.all([
+    const [students, templates, assessments, groups, subjectsCount, results] = await Promise.all([
       db.students.count(),
       db.templates.count(),
       db.assessments.count(),
+      db.classGroups.count(),
+      db.subjects.count(),
+      db.results.toArray(),
     ])
-    return { students, templates, assessments }
+
+    return {
+      students,
+      templates,
+      assessments,
+      groups,
+      subjects: subjectsCount,
+      pendingResults: results.filter(result => result.status !== 'completed').length,
+    }
   }, [])
+
+  const subjectMap = new Map(subjects?.map(subject => [subject.id!, subject.name]) ?? [])
+  const filteredRecentAssessments = (recentAssessments ?? [])
+    .filter(assessment => subjectFilter === 'all' || String(assessment.subjectId) === subjectFilter)
+    .slice(0, 5)
 
   return (
     <div className="page" style={{ paddingTop: 'var(--s-6)' }}>
-      {/* Hero */}
       <div style={{ marginBottom: 'var(--s-6)' }}>
-        <h1 style={{ fontSize: '1.5rem', marginBottom: 'var(--s-1)' }}>📒 Cuaderno del Profe</h1>
-        <p style={{ color: 'var(--color-text-2)' }}>Evaluación con rúbricas rápida y offline</p>
+        <h1 style={{ fontSize: '1.5rem', marginBottom: 'var(--s-1)' }}>Cuaderno del Profe x100</h1>
+        <p style={{ color: 'var(--color-text-2)' }}>
+          Gestion completa: grupos, rubricas, evaluaciones, medias y sincronizacion.
+        </p>
       </div>
 
-      {/* Quick actions */}
       <div className="section">
         <div className="section-header">
-          <span className="section-title">Acceso rápido</span>
+          <span className="section-title">Acceso rapido</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--s-3)' }}>
-          <Link to="/assessments/new" className="card" style={{ textDecoration: 'none', textAlign: 'center', padding: 'var(--s-5)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 'var(--s-2)' }}>✅</div>
-            <div style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Nueva evaluación</div>
+          <Link to="/assessments/new" className="card" style={quickCardStyle}>
+            <div style={quickIconStyle}>✅</div>
+            <div style={quickLabelStyle}>Nueva evaluacion</div>
           </Link>
-          <Link to="/studio" className="card" style={{ textDecoration: 'none', textAlign: 'center', padding: 'var(--s-5)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 'var(--s-2)' }}>🤖</div>
-            <div style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Rubric Studio</div>
+          <Link to="/studio" className="card" style={quickCardStyle}>
+            <div style={quickIconStyle}>🧭</div>
+            <div style={quickLabelStyle}>Asistente de rubricas</div>
           </Link>
-          <Link to="/library" className="card" style={{ textDecoration: 'none', textAlign: 'center', padding: 'var(--s-5)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 'var(--s-2)' }}>📋</div>
-            <div style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Biblioteca</div>
+          <Link to="/insights" className="card" style={quickCardStyle}>
+            <div style={quickIconStyle}>📈</div>
+            <div style={quickLabelStyle}>Analitica</div>
           </Link>
-          <Link to="/setup" className="card" style={{ textDecoration: 'none', textAlign: 'center', padding: 'var(--s-5)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 'var(--s-2)' }}>👥</div>
-            <div style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Mis grupos</div>
+          <Link to="/setup" className="card" style={quickCardStyle}>
+            <div style={quickIconStyle}>👥</div>
+            <div style={quickLabelStyle}>Grupos y alumnado</div>
           </Link>
         </div>
       </div>
 
-      {/* Stats */}
       {stats && (
         <div className="section">
           <div className="section-header">
@@ -58,38 +78,55 @@ export function Dashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--s-3)' }}>
             {[
               { label: 'Alumnos', value: stats.students },
-              { label: 'Rúbricas', value: stats.templates },
+              { label: 'Rubricas', value: stats.templates },
               { label: 'Evaluaciones', value: stats.assessments },
-            ].map(s => (
-              <div key={s.label} className="card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>{s.value}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)' }}>{s.label}</div>
+              { label: 'Grupos', value: stats.groups },
+              { label: 'Asignaturas', value: stats.subjects },
+              { label: 'Pendientes', value: stats.pendingResults },
+            ].map(stat => (
+              <div key={stat.label} className="card" style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-primary)' }}>{stat.value}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)' }}>{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Recent assessments */}
       {recentAssessments && recentAssessments.length > 0 && (
         <div className="section">
           <div className="section-header">
             <span className="section-title">Recientes</span>
             <Link to="/assessments" style={{ color: 'var(--color-primary)', fontSize: '0.875rem' }}>Ver todas</Link>
           </div>
+
+          <div className="form-group" style={{ marginBottom: 'var(--s-3)' }}>
+            <label className="form-label">Asignatura</label>
+            <select className="form-select" value={subjectFilter} onChange={event => setSubjectFilter(event.target.value)}>
+              <option value="all">Todas las asignaturas</option>
+              {subjects?.map(subject => (
+                <option key={subject.id} value={subject.id}>{subject.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {filteredRecentAssessments.length === 0 && (
+            <div className="card text-sm text-muted">No hay evaluaciones recientes para esa asignatura.</div>
+          )}
+
           <div className="list">
-            {recentAssessments.map(a => (
-              <Link key={a.id} to={`/assessments/${a.id}`} className="list-item">
+            {filteredRecentAssessments.map(assessment => (
+              <Link key={assessment.id} to={`/assessments/${assessment.id}`} className="list-item">
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {a.title}
+                    {assessment.title}
                   </div>
                   <div style={{ fontSize: '0.8125rem', color: 'var(--color-muted)' }}>
-                    {new Date(a.date).toLocaleDateString('es-ES')}
+                    {subjectMap.get(assessment.subjectId) ?? 'Sin asignatura'} · {new Date(assessment.date).toLocaleDateString('es-ES')}
                   </div>
                 </div>
-                <span className={`badge badge-${a.status === 'closed' ? 'done' : a.status === 'active' ? 'progress' : 'pending'}`}>
-                  {a.status === 'closed' ? 'Cerrada' : a.status === 'active' ? 'Activa' : 'Borrador'}
+                <span className={`badge badge-${assessment.status === 'closed' ? 'done' : assessment.status === 'active' ? 'progress' : 'pending'}`}>
+                  {assessment.status === 'closed' ? 'Cerrada' : assessment.status === 'active' ? 'Activa' : 'Borrador'}
                 </span>
               </Link>
             ))}
@@ -98,4 +135,20 @@ export function Dashboard() {
       )}
     </div>
   )
+}
+
+const quickCardStyle: React.CSSProperties = {
+  textDecoration: 'none',
+  textAlign: 'center',
+  padding: 'var(--s-5)',
+}
+
+const quickIconStyle: React.CSSProperties = {
+  fontSize: '2rem',
+  marginBottom: 'var(--s-2)',
+}
+
+const quickLabelStyle: React.CSSProperties = {
+  fontWeight: 700,
+  fontSize: '0.9375rem',
 }

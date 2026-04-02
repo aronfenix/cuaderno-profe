@@ -76,6 +76,9 @@ git push origin main
 ### Render (recomendado)
 Este repo incluye `render.yaml`.
 
+Despliegue directo:
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/aronfenix/cuaderno-profe)
+
 1. Conecta el repo en Render.
 2. Crea Web Service desde `render.yaml`.
 3. Verifica que monta disco persistente en `/var/data`.

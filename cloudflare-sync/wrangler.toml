@@ -6,5 +6,5 @@ workers_dev = true
 [[d1_databases]]
 binding = "DB"
 database_name = "cuaderno_profe_sync"
-database_id = "REEMPLAZAR_CON_TU_DATABASE_ID"
+database_id = "116894ae-e714-4cd5-9919-74fe883cac3b"
 migrations_dir = "migrations"

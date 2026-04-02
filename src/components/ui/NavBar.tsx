@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: '/assessments', label: 'Evaluar', icon: '✅', exact: false },
   { to: '/library', label: 'Rubricas', icon: '📋', exact: false },
   { to: '/setup', label: 'Grupos', icon: '👥', exact: false },
+  { to: '/settings', label: 'Ajustes', icon: '⚙️', exact: false },
 ]
 
 export function NavBar() {

@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Inicio', icon: '🏠', exact: true },
   { to: '/insights', label: 'Analitica', icon: '📈', exact: false },
   { to: '/assessments', label: 'Evaluar', icon: '✅', exact: false },
+  { to: '/checklists', label: 'Lista', icon: '☑️', exact: false },
   { to: '/library', label: 'Rubricas', icon: '📋', exact: false },
   { to: '/setup', label: 'Grupos', icon: '👥', exact: false },
   { to: '/settings', label: 'Ajustes', icon: '⚙️', exact: false },

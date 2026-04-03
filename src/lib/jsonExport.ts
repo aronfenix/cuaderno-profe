@@ -10,6 +10,8 @@ export interface BackupPackage {
   enrollments: unknown[]
   subjects: unknown[]
   studentNotes?: unknown[]
+  checklists?: unknown[]
+  checklistEntries?: unknown[]
   teamArrangements?: unknown[]
   teams?: unknown[]
   teamMemberships?: unknown[]
@@ -23,7 +25,7 @@ export interface BackupPackage {
 export async function exportFullBackup(): Promise<BackupPackage> {
   const [
     academicYears, classGroups, students, enrollments, subjects,
-    studentNotes, teamArrangements, teams, teamMemberships,
+    studentNotes, checklists, checklistEntries, teamArrangements, teams, teamMemberships,
     templates, assessments, snapshots, results, criterionScores
   ] = await Promise.all([
     db.academicYears.toArray(),
@@ -32,6 +34,8 @@ export async function exportFullBackup(): Promise<BackupPackage> {
     db.enrollments.toArray(),
     db.subjects.toArray(),
     db.studentNotes.toArray(),
+    db.checklists.toArray(),
+    db.checklistEntries.toArray(),
     db.teamArrangements.toArray(),
     db.teams.toArray(),
     db.teamMemberships.toArray(),
@@ -46,7 +50,7 @@ export async function exportFullBackup(): Promise<BackupPackage> {
     version: '1.0',
     exportedAt: Date.now(),
     academicYears, classGroups, students, enrollments, subjects,
-    studentNotes, teamArrangements, teams, teamMemberships,
+    studentNotes, checklists, checklistEntries, teamArrangements, teams, teamMemberships,
     templates, assessments, snapshots, results, criterionScores
   }
 }
@@ -106,6 +110,8 @@ export async function importFullBackup(backup: BackupPackage): Promise<void> {
       db.enrollments.clear(),
       db.subjects.clear(),
       db.studentNotes.clear(),
+      db.checklists.clear(),
+      db.checklistEntries.clear(),
       db.teamArrangements.clear(),
       db.teams.clear(),
       db.teamMemberships.clear(),
@@ -122,6 +128,8 @@ export async function importFullBackup(backup: BackupPackage): Promise<void> {
     if (backup.enrollments.length) await db.enrollments.bulkAdd(backup.enrollments as any[])
     if (backup.subjects.length) await db.subjects.bulkAdd(backup.subjects as any[])
     if ((backup.studentNotes ?? []).length) await db.studentNotes.bulkAdd((backup.studentNotes ?? []) as any[])
+    if ((backup.checklists ?? []).length) await db.checklists.bulkAdd((backup.checklists ?? []) as any[])
+    if ((backup.checklistEntries ?? []).length) await db.checklistEntries.bulkAdd((backup.checklistEntries ?? []) as any[])
     if ((backup.teamArrangements ?? []).length) await db.teamArrangements.bulkAdd((backup.teamArrangements ?? []) as any[])
     if ((backup.teams ?? []).length) await db.teams.bulkAdd((backup.teams ?? []) as any[])
     if ((backup.teamMemberships ?? []).length) await db.teamMemberships.bulkAdd((backup.teamMemberships ?? []) as any[])

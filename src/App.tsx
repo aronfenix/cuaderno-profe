@@ -1,9 +1,11 @@
-﻿import { lazy, Suspense, Component, type ReactNode } from 'react'
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+﻿import { lazy, Suspense, Component, useEffect, type ReactNode } from 'react'
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { NavBar } from './components/ui/NavBar'
+import { recordRecentPath } from './lib/quickAccess'
 
 const Dashboard        = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })))
 const Setup            = lazy(() => import('./pages/Setup').then(m => ({ default: m.Setup })))
+const Checklists       = lazy(() => import('./pages/Checklists').then(m => ({ default: m.Checklists })))
 const Library          = lazy(() => import('./pages/Library').then(m => ({ default: m.Library })))
 const Studio           = lazy(() => import('./pages/Studio').then(m => ({ default: m.Studio })))
 const Insights         = lazy(() => import('./pages/Insights').then(m => ({ default: m.Insights })))
@@ -84,15 +86,27 @@ function PageLoader() {
   )
 }
 
+function RouteTracker() {
+  const location = useLocation()
+
+  useEffect(() => {
+    recordRecentPath(location.pathname)
+  }, [location.pathname])
+
+  return null
+}
+
 export default function App() {
   return (
     <AppErrorBoundary>
       <HashRouter>
+        <RouteTracker />
         <div className="app-body">
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/setup" element={<Setup />} />
+              <Route path="/checklists" element={<Checklists />} />
               <Route path="/library" element={<Library />} />
               <Route path="/studio" element={<Studio />} />
               <Route path="/insights" element={<Insights />} />

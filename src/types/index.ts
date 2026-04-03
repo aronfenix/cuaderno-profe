@@ -7,6 +7,8 @@ export type AssessmentStatus = 'draft' | 'active' | 'closed'
 export type ResultStatus = 'pending' | 'in_progress' | 'completed'
 export type LLMStudioState = 'intake' | 'generate' | 'iterate' | 'save'
 export type TemplateSource = 'ai' | 'manual'
+export type ChecklistKind = 'attendance' | 'authorization' | 'custom'
+export type ChecklistValue = 'yes' | 'no' | 'na'
 export type StudentNoteType =
   | 'academica'
   | 'conducta'
@@ -74,6 +76,31 @@ export interface StudentNote {
   deviceId: string
   syncStatus: SyncStatus
   createdAt: number
+  updatedAt: number
+}
+
+export interface ChecklistSession {
+  id?: number
+  title: string
+  kind: ChecklistKind
+  date: string
+  yearId: number
+  groupId: number
+  subjectId: number | null
+  deviceId: string
+  syncStatus: SyncStatus
+  createdAt: number
+  updatedAt: number
+}
+
+export interface ChecklistEntry {
+  id?: number
+  sessionId: number
+  studentId: number
+  value: ChecklistValue
+  comment: string
+  deviceId: string
+  syncStatus: SyncStatus
   updatedAt: number
 }
 

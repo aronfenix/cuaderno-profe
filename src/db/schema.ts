@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 import type {
-  AcademicYear, ClassGroup, Student, Enrollment, Subject, StudentNote,
+  AcademicYear, ClassGroup, Student, Enrollment, Subject, StudentNote, ChecklistSession, ChecklistEntry,
   TeamArrangement, Team, TeamMembership,
   InstrumentTemplate, Assessment, InstrumentSnapshot,
   StudentAssessmentResult, CriterionScore
@@ -13,6 +13,8 @@ export class CuadernoDb extends Dexie {
   enrollments!: Table<Enrollment, number>
   subjects!: Table<Subject, number>
   studentNotes!: Table<StudentNote, number>
+  checklists!: Table<ChecklistSession, number>
+  checklistEntries!: Table<ChecklistEntry, number>
   teamArrangements!: Table<TeamArrangement, number>
   teams!: Table<Team, number>
   teamMemberships!: Table<TeamMembership, number>
@@ -133,6 +135,26 @@ export class CuadernoDb extends Dexie {
           assessment.updatedAt = now
         })
       })
+
+    // v5 - classroom checklists (attendance/authorizations/custom)
+    this.version(5).stores({
+      academicYears:   '++id, name, isActive, syncStatus',
+      classGroups:     '++id, yearId, name, syncStatus',
+      students:        '++id, displayName, syncStatus',
+      enrollments:     '++id, studentId, groupId, yearId, [studentId+groupId]',
+      subjects:        '++id, yearId, name, syncStatus',
+      studentNotes:    '++id, studentId, subjectId, groupId, noteType, isResolved, createdAt, updatedAt',
+      checklists:      '++id, groupId, yearId, subjectId, kind, date, updatedAt, syncStatus, [groupId+date]',
+      checklistEntries:'++id, sessionId, studentId, value, updatedAt, [sessionId+studentId]',
+      teamArrangements:'++id, groupId, yearId, name, isArchived, updatedAt, syncStatus',
+      teams:           '++id, groupId, yearId, arrangementId, name, isArchived, updatedAt, syncStatus',
+      teamMemberships: '++id, teamId, studentId, [teamId+studentId]',
+      templates:       '++id, title, source, syncStatus, updatedAt',
+      assessments:     '++id, groupId, subjectId, teamArrangementId, templateId, snapshotId, status, date, updatedAt, syncStatus',
+      snapshots:       '++id, templateId, assessmentId',
+      results:         '++id, assessmentId, studentId, status, syncStatus, updatedAt, [assessmentId+studentId]',
+      criterionScores: '++id, resultId, criterionId, [resultId+criterionId]',
+    })
   }
 }
 

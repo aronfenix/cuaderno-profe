@@ -107,6 +107,7 @@ export default function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/setup" element={<Setup />} />
               <Route path="/checklists" element={<Checklists />} />
+              <Route path="/checklists/:sessionId" element={<Checklists />} />
               <Route path="/library" element={<Library />} />
               <Route path="/studio" element={<Studio />} />
               <Route path="/insights" element={<Insights />} />

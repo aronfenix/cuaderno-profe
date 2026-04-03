@@ -8,9 +8,16 @@ export interface RecentVisit extends QuickAccessItem {
   visitedAt: number
 }
 
-const FAVORITES_KEY = 'dashboardFavorites'
+export interface PinnedFavorite extends QuickAccessItem {
+  pinnedAt: number
+}
+
+const QUICK_FAVORITES_KEY = 'dashboardQuickFavorites'
+const PINNED_FAVORITES_KEY = 'dashboardPinnedFavorites'
+const LEGACY_FAVORITES_KEY = 'dashboardFavorites'
 const RECENTS_KEY = 'dashboardRecents'
 const MAX_RECENTS = 8
+const MAX_PINNED = 12
 
 export const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
   { path: '/assessments/new', label: 'Nueva evaluacion', icon: '✅' },
@@ -21,7 +28,7 @@ export const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
   { path: '/settings', label: 'Ajustes', icon: '⚙️' },
 ]
 
-const DEFAULT_FAVORITES = ['/assessments/new', '/checklists', '/studio', '/setup']
+const DEFAULT_QUICK_FAVORITES = ['/assessments/new', '/checklists', '/studio', '/setup']
 
 function parseJson<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback
@@ -32,13 +39,19 @@ function parseJson<T>(raw: string | null, fallback: T): T {
   }
 }
 
+function validateQuickPath(path: string): boolean {
+  return QUICK_ACCESS_ITEMS.some(item => item.path === path)
+}
+
 export function getFavoritePaths(): string[] {
-  const data = parseJson<string[]>(localStorage.getItem(FAVORITES_KEY), DEFAULT_FAVORITES)
-  return data.filter(path => QUICK_ACCESS_ITEMS.some(item => item.path === path))
+  const modern = parseJson<string[] | null>(localStorage.getItem(QUICK_FAVORITES_KEY), null)
+  const source = modern ?? parseJson<string[]>(localStorage.getItem(LEGACY_FAVORITES_KEY), DEFAULT_QUICK_FAVORITES)
+  return source.filter(validateQuickPath)
 }
 
 function saveFavoritePaths(paths: string[]): void {
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(paths))
+  localStorage.setItem(QUICK_FAVORITES_KEY, JSON.stringify(paths))
+  localStorage.removeItem(LEGACY_FAVORITES_KEY)
 }
 
 export function toggleFavoritePath(path: string): string[] {
@@ -48,6 +61,44 @@ export function toggleFavoritePath(path: string): string[] {
     ? current.filter(item => item !== path)
     : [...current, path]
   saveFavoritePaths(next)
+  return next
+}
+
+export function getPinnedFavorites(): PinnedFavorite[] {
+  const data = parseJson<PinnedFavorite[]>(localStorage.getItem(PINNED_FAVORITES_KEY), [])
+  return data
+    .filter(item =>
+      typeof item.path === 'string' &&
+      typeof item.label === 'string' &&
+      typeof item.icon === 'string' &&
+      typeof item.pinnedAt === 'number'
+    )
+    .sort((a, b) => b.pinnedAt - a.pinnedAt)
+    .slice(0, MAX_PINNED)
+}
+
+function savePinnedFavorites(items: PinnedFavorite[]): void {
+  localStorage.setItem(PINNED_FAVORITES_KEY, JSON.stringify(items.slice(0, MAX_PINNED)))
+}
+
+export function isPinnedFavorite(path: string): boolean {
+  return getPinnedFavorites().some(item => item.path === path)
+}
+
+export function upsertPinnedFavorite(item: QuickAccessItem): PinnedFavorite[] {
+  const current = getPinnedFavorites()
+  const now = Date.now()
+  const next: PinnedFavorite[] = [
+    { ...item, pinnedAt: now },
+    ...current.filter(existing => existing.path !== item.path),
+  ]
+  savePinnedFavorites(next)
+  return next
+}
+
+export function removePinnedFavorite(path: string): PinnedFavorite[] {
+  const next = getPinnedFavorites().filter(item => item.path !== path)
+  savePinnedFavorites(next)
   return next
 }
 
@@ -67,6 +118,7 @@ function describePath(pathname: string): QuickAccessItem | null {
   if (exact) return exact
 
   if (pathname === '/' || pathname === '') return { path: '/', label: 'Inicio', icon: '🏠' }
+  if (pathname.startsWith('/checklists/')) return { path: pathname, label: 'Checklist', icon: '☑️' }
   if (pathname.startsWith('/assessments/') && pathname.includes('/grade/')) return { path: pathname, label: 'Calificar', icon: '✍️' }
   if (pathname.startsWith('/assessments/') && pathname.endsWith('/results')) return { path: pathname, label: 'Resultados', icon: '📊' }
   if (pathname.startsWith('/assessments/')) return { path: pathname, label: 'Detalle evaluacion', icon: '✅' }

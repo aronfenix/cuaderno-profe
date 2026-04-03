@@ -6,13 +6,16 @@ import {
   QUICK_ACCESS_ITEMS,
   getFavoritePaths,
   toggleFavoritePath,
+  getPinnedFavorites,
   getRecentVisits,
+  type PinnedFavorite,
   type RecentVisit,
 } from '../lib/quickAccess'
 
 export function Dashboard() {
   const [subjectFilter, setSubjectFilter] = useState('all')
   const [favoritePaths, setFavoritePaths] = useState<string[]>(() => getFavoritePaths())
+  const [pinnedFavorites] = useState<PinnedFavorite[]>(() => getPinnedFavorites())
   const [recentVisits] = useState<RecentVisit[]>(() => getRecentVisits())
 
   const recentAssessments = useLiveQuery(
@@ -46,10 +49,21 @@ export function Dashboard() {
     .filter(assessment => subjectFilter === 'all' || String(assessment.subjectId) === subjectFilter)
     .slice(0, 5)
 
-  const favoriteItems = useMemo(
+  const quickFavoriteItems = useMemo(
     () => QUICK_ACCESS_ITEMS.filter(item => favoritePaths.includes(item.path)),
     [favoritePaths]
   )
+
+  const favoriteItems = useMemo(() => {
+    const map = new Map<string, { path: string; label: string; icon: string }>()
+    for (const item of pinnedFavorites) {
+      map.set(item.path, { path: item.path, label: item.label, icon: item.icon })
+    }
+    for (const item of quickFavoriteItems) {
+      if (!map.has(item.path)) map.set(item.path, item)
+    }
+    return Array.from(map.values())
+  }, [pinnedFavorites, quickFavoriteItems])
 
   const toggleFavorite = (path: string) => {
     setFavoritePaths(toggleFavoritePath(path))
@@ -71,7 +85,7 @@ export function Dashboard() {
 
         {favoriteItems.length === 0 && (
           <div className="card text-sm text-muted" style={{ marginBottom: 'var(--s-3)' }}>
-            Marca accesos con estrella en la seccion de abajo para fijarlos aqui.
+            Puedes fijar accesos rapidos con estrella y elementos concretos (como una autorizacion) desde su pantalla.
           </div>
         )}
 

@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useNavigate, useParams } from 'react-router-dom'
 import { GroupsRepo } from '../db/repos/GroupsRepo'
 import { StudentsRepo } from '../db/repos/StudentsRepo'
 import { ChecklistsRepo } from '../db/repos/ChecklistsRepo'
 import type { ChecklistKind, ChecklistValue } from '../types'
+import {
+  getPinnedFavorites,
+  removePinnedFavorite,
+  upsertPinnedFavorite,
+} from '../lib/quickAccess'
 
 function todayIsoDate(): string {
   const now = new Date()
@@ -35,6 +41,9 @@ function valueLabel(value: ChecklistValue): string {
 }
 
 export function Checklists() {
+  const navigate = useNavigate()
+  const { sessionId } = useParams<{ sessionId?: string }>()
+
   const groups = useLiveQuery(() => GroupsRepo.getAllGroups(), [])
   const subjects = useLiveQuery(() => GroupsRepo.getAllSubjects(), [])
   const activeYear = useLiveQuery(() => GroupsRepo.getResolvedActiveYear(), [])
@@ -47,10 +56,25 @@ export function Checklists() {
   const [subjectId, setSubjectId] = useState<string>('')
   const [search, setSearch] = useState('')
   const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>({})
+  const [pinnedPaths, setPinnedPaths] = useState<Set<string>>(
+    () => new Set(getPinnedFavorites().map(item => item.path))
+  )
+
+  const routeSessionId = sessionId ? Number(sessionId) : null
+  const routeSession = useLiveQuery(
+    () => (routeSessionId && Number.isFinite(routeSessionId)
+      ? ChecklistsRepo.getById(routeSessionId)
+      : Promise.resolve(undefined)),
+    [routeSessionId]
+  )
 
   const activeGroupId = selectedGroupId ?? groups?.[0]?.id ?? null
   const groupYearById = useMemo(
     () => new Map((groups ?? []).map(group => [group.id!, group.yearId])),
+    [groups]
+  )
+  const groupNameById = useMemo(
+    () => new Map((groups ?? []).map(group => [group.id!, group.name])),
     [groups]
   )
 
@@ -68,15 +92,31 @@ export function Checklists() {
   )
 
   useEffect(() => {
-    if (!sessions?.length) {
-      setSelectedSessionId(null)
+    if (!routeSessionId) return
+    if (!Number.isFinite(routeSessionId)) {
+      navigate('/checklists', { replace: true })
       return
     }
-    const exists = sessions.some(session => session.id === selectedSessionId)
-    if (!exists) {
-      setSelectedSessionId(sessions[0].id ?? null)
+    if (!routeSession) return
+
+    setSelectedGroupId(routeSession.groupId)
+    setSelectedSessionId(routeSession.id ?? null)
+  }, [navigate, routeSessionId, routeSession])
+
+  useEffect(() => {
+    if (!sessions?.length) {
+      setSelectedSessionId(null)
+      if (!routeSessionId) navigate('/checklists', { replace: true })
+      return
     }
-  }, [sessions, selectedSessionId])
+
+    const exists = sessions.some(session => session.id === selectedSessionId)
+    if (exists) return
+
+    const fallbackId = sessions[0].id ?? null
+    setSelectedSessionId(fallbackId)
+    if (fallbackId) navigate(`/checklists/${fallbackId}`, { replace: true })
+  }, [navigate, routeSessionId, selectedSessionId, sessions])
 
   useEffect(() => {
     setTitle(defaultTitle(kind))
@@ -126,9 +166,13 @@ export function Checklists() {
     })
     setSelectedSessionId(createdId)
     setSearch('')
+    navigate(`/checklists/${createdId}`)
   }
 
   const selectedSession = (sessions ?? []).find(session => session.id === selectedSessionId)
+  const selectedSessionPath = selectedSession?.id ? `/checklists/${selectedSession.id}` : ''
+  const selectedSessionPinned = selectedSessionPath ? pinnedPaths.has(selectedSessionPath) : false
+
   const subjectMap = new Map((subjects ?? []).map(subject => [subject.id!, subject.name]))
 
   return (
@@ -152,6 +196,7 @@ export function Checklists() {
               onChange={event => {
                 setSelectedGroupId(Number(event.target.value))
                 setSelectedSessionId(null)
+                navigate('/checklists')
               }}
             >
               {(groups ?? []).map(group => (
@@ -188,7 +233,7 @@ export function Checklists() {
                 className="form-input"
                 value={title}
                 onChange={event => setTitle(event.target.value)}
-                placeholder="Ej: Pase de lista 6A"
+                placeholder="Ej: Autorizacion excursion 6A"
               />
             </div>
 
@@ -224,7 +269,10 @@ export function Checklists() {
                     borderColor: selectedSessionId === session.id ? 'var(--color-primary)' : undefined,
                     boxShadow: selectedSessionId === session.id ? 'var(--shadow-sm)' : undefined,
                   }}
-                  onClick={() => setSelectedSessionId(session.id ?? null)}
+                  onClick={() => {
+                    setSelectedSessionId(session.id ?? null)
+                    if (session.id) navigate(`/checklists/${session.id}`)
+                  }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -242,8 +290,14 @@ export function Checklists() {
                       event.stopPropagation()
                       const accepted = window.confirm('Eliminar este checklist y todas sus marcas?')
                       if (!accepted) return
+                      const deletedPath = `/checklists/${session.id}`
+                      const nextPinned = removePinnedFavorite(deletedPath)
+                      setPinnedPaths(new Set(nextPinned.map(item => item.path)))
                       await ChecklistsRepo.deleteSession(session.id!)
-                      if (selectedSessionId === session.id) setSelectedSessionId(null)
+                      if (selectedSessionId === session.id) {
+                        setSelectedSessionId(null)
+                        navigate('/checklists')
+                      }
                     }}
                   >
                     Eliminar
@@ -259,7 +313,27 @@ export function Checklists() {
                 <span className="section-title">Edicion rapida</span>
               </div>
               <div className="card" style={{ marginBottom: 'var(--s-3)' }}>
-                <h2 style={{ fontSize: '1rem', marginBottom: 'var(--s-1)' }}>{selectedSession.title}</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--s-2)' }}>
+                  <h2 style={{ fontSize: '1rem', marginBottom: 'var(--s-1)' }}>{selectedSession.title}</h2>
+                  <button
+                    className={`btn ${selectedSessionPinned ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ minHeight: 34, padding: '0.4rem 0.65rem', fontSize: '0.78rem' }}
+                    onClick={() => {
+                      if (!selectedSessionPath) return
+                      if (selectedSessionPinned) {
+                        const next = removePinnedFavorite(selectedSessionPath)
+                        setPinnedPaths(new Set(next.map(item => item.path)))
+                        return
+                      }
+                      const label = `${selectedSession.title} (${groupNameById.get(selectedSession.groupId) ?? 'Grupo'})`
+                      const next = upsertPinnedFavorite({ path: selectedSessionPath, label, icon: '☑️' })
+                      setPinnedPaths(new Set(next.map(item => item.path)))
+                    }}
+                  >
+                    {selectedSessionPinned ? '★ Favorito' : '☆ Marcar favorito'}
+                  </button>
+                </div>
+
                 <p className="text-sm text-muted" style={{ marginBottom: 'var(--s-3)' }}>
                   {kindLabel(selectedSession.kind)} · {new Date(selectedSession.date).toLocaleDateString('es-ES')}
                   {selectedSession.subjectId ? ` · ${subjectMap.get(selectedSession.subjectId) ?? 'Asignatura'}` : ''}

@@ -34,6 +34,7 @@ export interface Criterion {
   titleShort: string
   helpText?: string
   weight: number      // 0..1, all weights in template must sum to 1
+  bonusMaxPoints?: number // optional additive bonus in final grade (0..N), never penalizes
   descriptors: Descriptors
 }
 
@@ -226,6 +227,7 @@ export interface ChatMessage {
 export interface GradeCalculationResult {
   avg1to5: number | null
   grade1to10: number | null
+  bonusPoints: number
   naCount: number
   totalCount: number
 }

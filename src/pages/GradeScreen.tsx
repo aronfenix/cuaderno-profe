@@ -166,6 +166,7 @@ export function GradeScreen() {
           <div className="grade-progress">
             {answeredCount}/{criteria.length} criterios
             {gradeResult?.naCount ? ` · ${gradeResult.naCount} N/A` : ''}
+            {gradeResult?.bonusPoints ? ` · +${gradeResult.bonusPoints.toFixed(2)} bonus` : ''}
             {team?.name ? ` · ${team.name}` : ''}
           </div>
         </div>
@@ -194,7 +195,14 @@ export function GradeScreen() {
               className={`criterion-card ${hasScore && !isNA ? 'scored' : ''} ${isNA ? 'na-scored' : ''}`}
             >
               <div className="criterion-card-header">
-                <h3 className="criterion-title">{criterion.titleShort}</h3>
+                <h3 className="criterion-title">
+                  {criterion.titleShort}
+                  {criterion.bonusMaxPoints ? (
+                    <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                      +{criterion.bonusMaxPoints.toFixed(1)} bonus
+                    </span>
+                  ) : null}
+                </h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-2)' }}>
                   <span className="criterion-index">{index + 1}/{criteria.length}</span>
                   {(criterion.helpText || criterion.descriptors[1]) && (

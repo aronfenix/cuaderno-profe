@@ -1,0 +1,238 @@
+import type { InstrumentTemplate } from '../../types'
+
+type TemplateImportPayload = Omit<
+  InstrumentTemplate,
+  'id' | 'version' | 'createdAt' | 'updatedAt' | 'source' | 'conversationSummary' | 'syncStatus' | 'deviceId'
+>
+
+export const BIOGRAFIAS_PACK_TEMPLATES: TemplateImportPayload[] = [
+  {
+    title: 'Proyecto Biografias - Cuadernillo escrito (Lengua + Sociales)',
+    description:
+      'Rubrica para evaluar el cuadernillo biografico final integrando Lengua y Ciencias Sociales.',
+    tags: ['Proyecto Biografias', 'Lengua', 'Ciencias Sociales', 'Cuadernillo'],
+    scale: { type: '1-5', allowNA: true },
+    finalGrade: { scale: '1-10', rounding: '0.5' },
+    criteria: [
+      {
+        id: 'bio-es-01',
+        titleShort: 'Estructura del cuadernillo',
+        helpText: 'Presentacion, vida, logros, legado y cierre.',
+        weight: 0.12,
+        descriptors: {
+          5: 'Sigue todos los bloques con transiciones claras y equilibrio excelente.',
+          4: 'Sigue los 5 bloques en orden con parrafos claros y diferenciados.',
+          3: 'Sigue la estructura con algun desorden menor o un bloque flojo.',
+          2: 'Estructura confusa; mezcla bloques o falta alguno importante.',
+          1: 'No hay estructura reconocible.',
+        },
+      },
+      {
+        id: 'bio-es-02',
+        titleShort: 'Redaccion y coherencia',
+        helpText: 'Calidad de frases, tercera persona y orden cronologico.',
+        weight: 0.12,
+        descriptors: {
+          5: 'Redaccion muy fluida, vocabulario rico y orden cronologico impecable.',
+          4: 'Frases variadas y bien enlazadas; tercera persona y orden cronologico correctos.',
+          3: 'Frases correctas aunque sencillas; respeta tercera persona y cronologia.',
+          2: 'Frases repetitivas o mal enlazadas; rompe persona narrativa o cronologia.',
+          1: 'Frases incoherentes; no respeta tercera persona ni orden temporal.',
+        },
+      },
+      {
+        id: 'bio-es-03',
+        titleShort: 'Ortografia y presentacion',
+        helpText: 'Correccion ortografica y limpieza del cuadernillo.',
+        weight: 0.1,
+        descriptors: {
+          5: 'Sin faltas relevantes y presentacion excelente, muy cuidada.',
+          4: 'Sin faltas o con 1-2 menores; letra clara y limpio.',
+          3: 'Pocas faltas y presentacion cuidada en general.',
+          2: 'Bastantes faltas y presentacion algo descuidada.',
+          1: 'Muchas faltas y presentacion dificil de leer.',
+        },
+      },
+      {
+        id: 'bio-es-04',
+        titleShort: 'Originalidad y voz propia',
+        helpText: 'Uso de palabras propias, comprension real del contenido.',
+        weight: 0.1,
+        descriptors: {
+          5: 'Lenguaje personal y reflexivo; demuestra comprension profunda.',
+          4: 'Claramente escrito con sus palabras; se nota comprension.',
+          3: 'Con sus palabras, aunque plano o mecanico en partes.',
+          2: 'Partes con tono de copia o lenguaje poco propio de 6o.',
+          1: 'Texto evidentemente copiado.',
+        },
+      },
+      {
+        id: 'bio-es-05',
+        titleShort: 'Extension y sintesis',
+        helpText: 'Ajuste a la extension esperada sin relleno.',
+        weight: 0.08,
+        descriptors: {
+          5: 'Supera la extension orientativa con gran sintesis y sin relleno.',
+          4: 'Cumple o supera la extension con contenido bien aprovechado.',
+          3: 'Llega cerca de la extension, con algo de relleno.',
+          2: 'Se queda corto para desarrollar bien el tema.',
+          1: 'Muy breve; no permite comprender al personaje.',
+        },
+      },
+      {
+        id: 'bio-es-06',
+        titleShort: 'Situacion historica',
+        helpText: 'Ubicacion correcta en epoca, pais y contexto historico.',
+        weight: 0.14,
+        descriptors: {
+          5: 'Situa con precision la epoca y aporta contexto historico muy bien conectado.',
+          4: 'Situa perfectamente al personaje en epoca, pais y contexto.',
+          3: 'Menciona epoca y pais correctamente pero con poco contexto.',
+          2: 'Datos imprecisos o incompletos de cuando y donde vivio.',
+          1: 'No situa al personaje en tiempo ni lugar.',
+        },
+      },
+      {
+        id: 'bio-es-07',
+        titleShort: 'Hechos y logros',
+        helpText: 'Seleccion y precision de logros principales.',
+        weight: 0.14,
+        descriptors: {
+          5: 'Logros muy bien seleccionados, explicados y contrastados.',
+          4: 'Explica logros principales con precision y detalle.',
+          3: 'Menciona logros correctos con poco detalle.',
+          2: 'Logros vagos, con errores o confusiones.',
+          1: 'No menciona logros relevantes o son erroneos.',
+        },
+      },
+      {
+        id: 'bio-es-08',
+        titleShort: 'Importancia historica y legado',
+        helpText: 'Explica por que el personaje cambio la historia.',
+        weight: 0.1,
+        descriptors: {
+          5: 'Analiza causas y consecuencias con claridad y pensamiento critico.',
+          4: 'Explica claramente por que cambio la historia y conecta causa-efecto.',
+          3: 'Menciona su importancia de forma general pero correcta.',
+          2: 'Dice que fue importante sin justificarlo bien.',
+          1: 'No explica su relevancia historica.',
+        },
+      },
+      {
+        id: 'bio-es-09',
+        titleShort: 'Contraportada y apoyo visual',
+        helpText: 'Creatividad, calidad visual y relacion con el personaje.',
+        weight: 0.1,
+        descriptors: {
+          5: 'Muy creativa y funcional; aporta informacion historica relevante.',
+          4: 'Creativa, atractiva y demuestra investigacion.',
+          3: 'Correcta y relacionada con el personaje.',
+          2: 'Poco esfuerzo o contenido poco relevante.',
+          1: 'En blanco o sin relacion con el personaje.',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Proyecto Biografias - Exposicion oral (Lengua + Sociales)',
+    description:
+      'Rubrica para exposicion oral del personaje historico. Incluye bonus adicional por realizarla en publico para las tres clases.',
+    tags: ['Proyecto Biografias', 'Lengua', 'Ciencias Sociales', 'Oral'],
+    scale: { type: '1-5', allowNA: true },
+    finalGrade: { scale: '1-10', rounding: '0.5' },
+    criteria: [
+      {
+        id: 'bio-or-01',
+        titleShort: 'Contenido historico del discurso',
+        helpText: 'Contexto, logros, legado y dato relevante.',
+        weight: 0.26,
+        descriptors: {
+          5: 'Contenido completo, preciso y con profundidad historica notable.',
+          4: 'Cubre los puntos clave con detalle y claridad.',
+          3: 'Cubre los puntos principales de forma basica pero correcta.',
+          2: 'Falta algun punto importante o queda superficial.',
+          1: 'Contenido pobre o incompleto.',
+        },
+      },
+      {
+        id: 'bio-or-02',
+        titleShort: 'Expresion oral',
+        helpText: 'Voz, ritmo, entonacion y claridad.',
+        weight: 0.2,
+        descriptors: {
+          5: 'Gran dominio de voz y ritmo; comunica con seguridad y naturalidad.',
+          4: 'Habla claro, alto y con ritmo natural.',
+          3: 'Habla claro, aunque con monotonia o ritmo irregular.',
+          2: 'Voz baja, ritmo acelerado o muletillas frecuentes.',
+          1: 'Apenas se entiende o no se oye.',
+        },
+      },
+      {
+        id: 'bio-or-03',
+        titleShort: 'Contacto visual y presencia',
+        helpText: 'Mirada al publico y postura comunicativa.',
+        weight: 0.16,
+        descriptors: {
+          5: 'Excelente presencia escenica y gran conexion con el publico.',
+          4: 'Mira a la clase y se dirige a distintos companeros.',
+          3: 'Mira bastante, con consultas puntuales a notas.',
+          2: 'Lee bastante y levanta la vista solo a veces.',
+          1: 'Lee todo el tiempo sin contacto visual.',
+        },
+      },
+      {
+        id: 'bio-or-04',
+        titleShort: 'Gestion del tiempo',
+        helpText: 'Ajuste al tiempo previsto y reparto del contenido.',
+        weight: 0.14,
+        descriptors: {
+          5: 'Tiempo perfecto y contenido muy bien repartido.',
+          4: 'Duracion adecuada y equilibrio claro de partes.',
+          3: 'Ligero desajuste, pero aceptable.',
+          2: 'Muy corto o muy largo para la actividad.',
+          1: 'Duracion claramente inadecuada.',
+        },
+      },
+      {
+        id: 'bio-or-05',
+        titleShort: 'Enganche e interes',
+        helpText: 'Capta atencion y genera curiosidad en la audiencia.',
+        weight: 0.14,
+        descriptors: {
+          5: 'Conecta mucho con la audiencia y deja huella clara.',
+          4: 'Capta la atencion y aporta dato curioso potente.',
+          3: 'Interesante, aunque sin un momento destacado.',
+          2: 'Monotono o poco atractivo.',
+          1: 'No genera interes en la audiencia.',
+        },
+      },
+      {
+        id: 'bio-or-06',
+        titleShort: 'Vocabulario historico y rigor',
+        helpText: 'Uso adecuado de terminos historicos y ausencia de errores de concepto.',
+        weight: 0.1,
+        descriptors: {
+          5: 'Vocabulario historico preciso y rigor excelente.',
+          4: 'Usa vocabulario adecuado y mantiene correccion conceptual.',
+          3: 'Vocabulario correcto en general con alguna imprecision menor.',
+          2: 'Varias imprecisiones o uso pobre de vocabulario historico.',
+          1: 'Errores importantes de vocabulario o concepto.',
+        },
+      },
+      {
+        id: 'bio-or-bonus',
+        titleShort: 'Bonus: exposicion en publico interclases',
+        helpText: 'Criterio bonus. No resta. Puede sumar hasta +1.0 en nota final.',
+        weight: 0,
+        bonusMaxPoints: 1,
+        descriptors: {
+          5: 'Expone en publico para las 3 clases con seguridad (+1.0).',
+          4: 'Expone en publico para 2 clases (+0.75 aprox).',
+          3: 'Expone en publico para su clase y otra (+0.5 aprox).',
+          2: 'Hace intento parcial de exposicion publica (+0.25 aprox).',
+          1: 'No realiza exposicion publica extra (+0).',
+        },
+      },
+    ],
+  },
+]

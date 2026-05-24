@@ -122,7 +122,10 @@ export async function getPendingLocalChanges(): Promise<boolean> {
 }
 
 export async function getCloudStatus(spaceId: string, apiBaseUrl: string): Promise<CloudStatus> {
-  const response = await fetch(`${cloudEndpoint(apiBaseUrl, 'status')}?spaceId=${encode(spaceId)}`)
+  const response = await fetch(
+    `${cloudEndpoint(apiBaseUrl, 'status')}?spaceId=${encode(spaceId)}&t=${Date.now()}`,
+    { cache: 'no-store' }
+  )
   const payload = await response.json()
   if (!response.ok) {
     throw new Error(payload?.error ?? 'No se pudo consultar el estado del servidor')
@@ -155,7 +158,10 @@ export async function downloadBackup(
   secret: string,
   apiBaseUrl: string
 ): Promise<{ backup: unknown; updatedAt: number }> {
-  const response = await fetch(`${cloudEndpoint(apiBaseUrl, 'load')}?spaceId=${encode(spaceId)}&secret=${encode(secret)}`)
+  const response = await fetch(
+    `${cloudEndpoint(apiBaseUrl, 'load')}?spaceId=${encode(spaceId)}&secret=${encode(secret)}&t=${Date.now()}`,
+    { cache: 'no-store' }
+  )
   const payload = await response.json()
   if (!response.ok) {
     throw new Error(payload?.error ?? 'No se pudo descargar la copia del servidor')

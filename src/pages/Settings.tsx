@@ -205,11 +205,19 @@ export function Settings() {
           <p style={{ fontSize: '0.84rem', color: 'var(--color-text-2)', marginBottom: 'var(--s-3)', lineHeight: 1.55 }}>
             Si este dispositivo tiene cambios nuevos, los sube. Si el servidor tiene una copia mas nueva, la descarga y recarga la app.
           </p>
-          <button className="btn btn-primary" disabled={working} onClick={() => runCloudAction('smart')}>
-            {working ? 'Sincronizando...' : 'Sincronizar ahora'}
-          </button>
+          <div style={{ display: 'flex', gap: 'var(--s-2)', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" disabled={working} onClick={() => runCloudAction('smart')}>
+              {working ? 'Sincronizando...' : 'Sincronizar ahora'}
+            </button>
+            <button className="btn btn-danger" disabled={working} onClick={() => runCloudAction('download')}>
+              Actualizar este dispositivo desde servidor
+            </button>
+          </div>
           <p style={{ fontSize: '0.78rem', color: 'var(--color-muted)', marginTop: 'var(--s-2)' }}>
             Cambios locales pendientes: {hasPendingLocalChanges === null ? 'sin comprobar' : hasPendingLocalChanges ? 'si' : 'no'} - Ultima sincronizacion: {formatDate(cloudMeta.lastSyncAt)}
+          </p>
+          <p style={{ fontSize: '0.78rem', color: 'var(--color-muted)', marginTop: 'var(--s-1)' }}>
+            Si un movil se queda con datos antiguos, usa el boton rojo: fuerza la copia buena del servidor en este dispositivo.
           </p>
         </div>
 

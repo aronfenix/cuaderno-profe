@@ -253,14 +253,47 @@
 
       function openDb() {
         const openRequest = new Promise((resolve, reject) => {
-          const request = indexedDB.open(DB_NAME, DB_VERSION)
+          const request = indexedDB.open(DB_NAME)
+          let upgraded = false
+          request.onupgradeneeded = event => ensureSchema(request.result, event.target.transaction)
+          request.onsuccess = async () => {
+            const db = request.result
+            const missing = STORE_ORDER.filter(storeName => !db.objectStoreNames.contains(storeName))
+            if (!missing.length) {
+              resolve(db)
+              return
+            }
+
+            const nextVersion = Math.max(Number(db.version || 0) + 1, DB_VERSION)
+            db.close()
+            if (upgraded) {
+              reject(new Error(`Faltan tablas locales: ${missing.join(', ')}`))
+              return
+            }
+            upgraded = true
+            try {
+              resolve(await openDbAtVersion(nextVersion))
+            } catch (error) {
+              reject(error)
+            }
+          }
+          request.onerror = () => reject(request.error)
+          request.onblocked = () => reject(new Error('La base local esta bloqueada por otra pestana de la app. Cierra las otras pestanas y vuelve a pulsar.'))
+        })
+
+        return withTimeout(openRequest, 7000, 'La base local no responde. Cierra todas las pestanas de la app en el movil y vuelve a abrir solo esta pagina de rescate.')
+      }
+
+      function openDbAtVersion(version) {
+        const openRequest = new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, version)
           request.onupgradeneeded = event => ensureSchema(request.result, event.target.transaction)
           request.onsuccess = () => resolve(request.result)
           request.onerror = () => reject(request.error)
           request.onblocked = () => reject(new Error('La base local esta bloqueada por otra pestana de la app. Cierra las otras pestanas y vuelve a pulsar.'))
         })
 
-        return withTimeout(openRequest, 7000, 'La base local no responde. Cierra todas las pestanas de la app en el movil y vuelve a abrir solo esta pagina de rescate.')
+        return withTimeout(openRequest, 7000, 'La base local no responde al actualizar tablas. Cierra todas las pestanas del cuaderno y repite el rescate.')
       }
 
       function withTimeout(promise, ms, message) {
@@ -345,7 +378,7 @@
 
           setStatus(`4/4 Listo: ${counts.students} alumnos y ${counts.templates} rubricas cargados. Abriendo app...`)
           setTimeout(() => {
-            window.location.href = './?v=10#/'
+            window.location.href = './?v=11#/'
           }, 1200)
         } catch (error) {
           setStatus(error.message || String(error))
@@ -355,7 +388,7 @@
 
       openApp.addEventListener('click', () => {
         saveSettings()
-        window.location.href = './?v=10#/'
+        window.location.href = './?v=11#/'
       })
     </script>
   </body>

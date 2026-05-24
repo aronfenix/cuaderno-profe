@@ -252,20 +252,38 @@
       }
 
       function openDb() {
-        return new Promise((resolve, reject) => {
+        const openRequest = new Promise((resolve, reject) => {
           const request = indexedDB.open(DB_NAME, DB_VERSION)
           request.onupgradeneeded = event => ensureSchema(request.result, event.target.transaction)
           request.onsuccess = () => resolve(request.result)
           request.onerror = () => reject(request.error)
-          request.onblocked = () => reject(new Error('La base local esta bloqueada. Cierra otras pestanas de la app y vuelve a intentarlo.'))
+          request.onblocked = () => reject(new Error('La base local esta bloqueada por otra pestana de la app. Cierra las otras pestanas y vuelve a pulsar.'))
         })
+
+        return withTimeout(openRequest, 7000, 'La base local no responde. Cierra todas las pestanas de la app en el movil y vuelve a abrir solo esta pagina de rescate.')
       }
 
-      function requestToPromise(request) {
-        return new Promise((resolve, reject) => {
-          request.onsuccess = () => resolve(request.result)
-          request.onerror = () => reject(request.error)
+      function withTimeout(promise, ms, message) {
+        let timeoutId
+        const timeout = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error(message)), ms)
         })
+        return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId))
+      }
+
+      function writeStore(db, storeName, rows) {
+        const write = new Promise((resolve, reject) => {
+          const tx = db.transaction([storeName], 'readwrite')
+          tx.oncomplete = () => resolve()
+          tx.onerror = () => reject(tx.error)
+          tx.onabort = () => reject(tx.error || new Error(`Escritura abortada en ${storeName}`))
+
+          const store = tx.objectStore(storeName)
+          store.clear()
+          for (const row of rows) store.put(row)
+        })
+
+        return withTimeout(write, 9000, `La tabla ${storeName} se ha quedado bloqueada. Cierra otras pestanas del cuaderno y repite el rescate.`)
       }
 
       async function replaceLocalData(backup, updatedAt) {
@@ -276,23 +294,11 @@
           throw new Error(`Faltan tablas locales: ${missing.join(', ')}`)
         }
 
-        await new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_ORDER, 'readwrite')
-          tx.oncomplete = () => resolve()
-          tx.onerror = () => reject(tx.error)
-          tx.onabort = () => reject(tx.error || new Error('Importacion abortada'))
-
-          for (const storeName of STORE_ORDER) {
-            const store = tx.objectStore(storeName)
-            store.clear()
-          }
-
-          for (const storeName of STORE_ORDER) {
-            const rows = backup[BACKUP_KEYS[storeName]] || []
-            const store = tx.objectStore(storeName)
-            for (const row of rows) store.put(row)
-          }
-        })
+        for (const storeName of STORE_ORDER) {
+          const rows = backup[BACKUP_KEYS[storeName]] || []
+          setStatus(`3/4 Escribiendo ${storeName}: ${rows.length} registros...`)
+          await writeStore(db, storeName, rows)
+        }
 
         db.close()
         localStorage.setItem(META_KEY, JSON.stringify({
@@ -339,7 +345,7 @@
 
           setStatus(`4/4 Listo: ${counts.students} alumnos y ${counts.templates} rubricas cargados. Abriendo app...`)
           setTimeout(() => {
-            window.location.href = './?v=9#/'
+            window.location.href = './?v=10#/'
           }, 1200)
         } catch (error) {
           setStatus(error.message || String(error))
@@ -349,7 +355,7 @@
 
       openApp.addEventListener('click', () => {
         saveSettings()
-        window.location.href = './?v=9#/'
+        window.location.href = './?v=10#/'
       })
     </script>
   </body>

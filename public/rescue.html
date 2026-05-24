@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -35,7 +35,7 @@
         padding: 24px;
         border: 1px solid rgba(20, 33, 61, 0.12);
         border-radius: 28px;
-        background: rgba(255, 255, 255, 0.82);
+        background: rgba(255, 255, 255, 0.86);
         box-shadow: 0 24px 70px rgba(20, 33, 61, 0.14);
       }
 
@@ -66,7 +66,7 @@
         background: white;
       }
 
-      button, a.button {
+      button {
         display: inline-flex;
         justify-content: center;
         width: 100%;
@@ -77,16 +77,10 @@
         color: white;
         background: var(--brand);
         font: 800 1rem system-ui, sans-serif;
-        text-decoration: none;
       }
 
-      button.secondary {
-        background: var(--danger);
-      }
-
-      button:disabled {
-        opacity: 0.6;
-      }
+      button.secondary { background: var(--danger); }
+      button:disabled { opacity: 0.6; }
 
       #status {
         min-height: 48px;
@@ -97,15 +91,16 @@
         color: var(--ink);
         font-family: system-ui, sans-serif;
         font-size: 0.95rem;
+        white-space: pre-line;
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>Rescate del móvil</h1>
+      <h1>Rescate del movil</h1>
       <p>
-        Esta página no carga la app por dentro. Guarda las claves, fuerza la recuperación
-        desde servidor y vuelve a abrir el cuaderno con la copia buena.
+        Esta pagina escribe directamente la copia buena del servidor en este navegador.
+        No depende de que la app arranque primero.
       </p>
 
       <label for="apiBaseUrl">Servidor</label>
@@ -117,18 +112,60 @@
       <label for="secret">Clave</label>
       <input id="secret" type="password" autocomplete="off" />
 
-      <button id="restore">Restaurar este móvil desde servidor</button>
-      <button id="openApp" class="secondary">Abrir app sin limpiar</button>
+      <button id="restore">Meter copia buena en este movil</button>
+      <button id="openApp" class="secondary">Abrir app</button>
 
       <div id="status">Listo para recuperar.</div>
     </main>
 
     <script>
       const DEFAULT_API = 'https://cuaderno-profe-sync.cuaderno-alvar-x100.workers.dev'
+      const DB_NAME = 'CuadernoProfe'
+      const DB_VERSION = 5
       const FORCE_KEY = 'cuaderno_force_cloud_restore'
       const SETTINGS_KEY = 'cloudSyncSettings'
       const META_KEY = 'cloudSyncMeta'
       const INIT_KEY = 'cuaderno_initialized'
+
+      const STORES = {
+        academicYears: ['name', 'isActive', 'syncStatus'],
+        classGroups: ['yearId', 'name', 'syncStatus'],
+        students: ['displayName', 'syncStatus'],
+        enrollments: ['studentId', 'groupId', 'yearId', '[studentId+groupId]'],
+        subjects: ['yearId', 'name', 'syncStatus'],
+        studentNotes: ['studentId', 'subjectId', 'groupId', 'noteType', 'isResolved', 'createdAt', 'updatedAt'],
+        checklists: ['groupId', 'yearId', 'subjectId', 'kind', 'date', 'updatedAt', 'syncStatus', '[groupId+date]'],
+        checklistEntries: ['sessionId', 'studentId', 'value', 'updatedAt', '[sessionId+studentId]'],
+        teamArrangements: ['groupId', 'yearId', 'name', 'isArchived', 'updatedAt', 'syncStatus'],
+        teams: ['groupId', 'yearId', 'arrangementId', 'name', 'isArchived', 'updatedAt', 'syncStatus'],
+        teamMemberships: ['teamId', 'studentId', '[teamId+studentId]'],
+        templates: ['title', 'source', 'syncStatus', 'updatedAt'],
+        assessments: ['groupId', 'subjectId', 'teamArrangementId', 'templateId', 'snapshotId', 'status', 'date', 'updatedAt', 'syncStatus'],
+        snapshots: ['templateId', 'assessmentId'],
+        results: ['assessmentId', 'studentId', 'status', 'syncStatus', 'updatedAt', '[assessmentId+studentId]'],
+        criterionScores: ['resultId', 'criterionId', '[resultId+criterionId]'],
+      }
+
+      const STORE_ORDER = Object.keys(STORES)
+
+      const BACKUP_KEYS = {
+        academicYears: 'academicYears',
+        classGroups: 'classGroups',
+        students: 'students',
+        enrollments: 'enrollments',
+        subjects: 'subjects',
+        studentNotes: 'studentNotes',
+        checklists: 'checklists',
+        checklistEntries: 'checklistEntries',
+        teamArrangements: 'teamArrangements',
+        teams: 'teams',
+        teamMemberships: 'teamMemberships',
+        templates: 'templates',
+        assessments: 'assessments',
+        snapshots: 'snapshots',
+        results: 'results',
+        criterionScores: 'criterionScores',
+      }
 
       const apiBaseUrl = document.getElementById('apiBaseUrl')
       const spaceId = document.getElementById('spaceId')
@@ -164,38 +201,117 @@
           secret: secret.value,
           autoSync: true
         }))
-        localStorage.setItem(FORCE_KEY, '1')
+        localStorage.removeItem(FORCE_KEY)
         localStorage.removeItem(META_KEY)
-        localStorage.removeItem(INIT_KEY)
+        localStorage.setItem(INIT_KEY, '1')
       }
 
-      function deleteDbWithTimeout() {
-        return new Promise(resolve => {
-          let settled = false
-          const finish = result => {
-            if (settled) return
-            settled = true
-            resolve(result)
-          }
-          const request = indexedDB.deleteDatabase('CuadernoProfe')
-          request.onsuccess = () => finish('borrada')
-          request.onerror = () => finish('no borrada, pero forzaremos restauracion')
-          request.onblocked = () => finish('bloqueada por otra pestaña, pero forzaremos restauracion')
-          setTimeout(() => finish('sin respuesta del navegador, pero forzaremos restauracion'), 2500)
-        })
+      async function clearCaches() {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations().catch(() => [])
+          await Promise.all(registrations.map(registration => registration.unregister().catch(() => undefined)))
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys().catch(() => [])
+          await Promise.all(keys.map(key => caches.delete(key).catch(() => undefined)))
+        }
       }
 
-      async function verifyServer() {
+      async function fetchBackup() {
         const url = `${endpoint('load')}?spaceId=${encodeURIComponent(spaceId.value.trim())}&secret=${encodeURIComponent(secret.value)}&t=${Date.now()}`
         const response = await fetch(url, { cache: 'no-store' })
         const payload = await response.json()
         if (!response.ok) throw new Error(payload && payload.error ? payload.error : 'No se pudo leer el servidor')
-        const backup = payload.backup || {}
-        return {
-          students: Array.isArray(backup.students) ? backup.students.length : 0,
-          groups: Array.isArray(backup.classGroups) ? backup.classGroups.length : 0,
-          templates: Array.isArray(backup.templates) ? backup.templates.length : 0,
+        if (!payload || !payload.backup || !Array.isArray(payload.backup.students)) {
+          throw new Error('El servidor no devolvio una copia valida')
         }
+        return { backup: payload.backup, updatedAt: Number(payload.updatedAt || Date.now()) }
+      }
+
+      function createIndex(store, indexSpec) {
+        const isCompound = indexSpec.startsWith('[') && indexSpec.endsWith(']')
+        const keyPath = isCompound ? indexSpec.slice(1, -1).split('+') : indexSpec
+        if (!store.indexNames.contains(indexSpec)) {
+          store.createIndex(indexSpec, keyPath)
+        }
+      }
+
+      function ensureSchema(db, transaction) {
+        for (const [storeName, indexes] of Object.entries(STORES)) {
+          let store
+          if (!db.objectStoreNames.contains(storeName)) {
+            store = db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true })
+          } else if (transaction) {
+            store = transaction.objectStore(storeName)
+          }
+
+          if (store) {
+            indexes.forEach(indexSpec => createIndex(store, indexSpec))
+          }
+        }
+      }
+
+      function openDb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION)
+          request.onupgradeneeded = event => ensureSchema(request.result, event.target.transaction)
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+          request.onblocked = () => reject(new Error('La base local esta bloqueada. Cierra otras pestanas de la app y vuelve a intentarlo.'))
+        })
+      }
+
+      function requestToPromise(request) {
+        return new Promise((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+        })
+      }
+
+      async function replaceLocalData(backup, updatedAt) {
+        const db = await openDb()
+        const missing = STORE_ORDER.filter(storeName => !db.objectStoreNames.contains(storeName))
+        if (missing.length) {
+          db.close()
+          throw new Error(`Faltan tablas locales: ${missing.join(', ')}`)
+        }
+
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_ORDER, 'readwrite')
+          tx.oncomplete = () => resolve()
+          tx.onerror = () => reject(tx.error)
+          tx.onabort = () => reject(tx.error || new Error('Importacion abortada'))
+
+          for (const storeName of STORE_ORDER) {
+            const store = tx.objectStore(storeName)
+            store.clear()
+          }
+
+          for (const storeName of STORE_ORDER) {
+            const rows = backup[BACKUP_KEYS[storeName]] || []
+            const store = tx.objectStore(storeName)
+            for (const row of rows) store.put(row)
+          }
+        })
+
+        db.close()
+        localStorage.setItem(META_KEY, JSON.stringify({
+          lastCloudUpdatedAt: updatedAt,
+          lastLocalDataUpdatedAt: maxBackupTimestamp(backup),
+          lastSyncAt: Date.now(),
+        }))
+      }
+
+      function maxBackupTimestamp(backup) {
+        let max = 0
+        for (const storeName of STORE_ORDER) {
+          const rows = backup[BACKUP_KEYS[storeName]] || []
+          for (const row of rows) {
+            if (!row || typeof row !== 'object') continue
+            max = Math.max(max, Number(row.updatedAt || 0), Number(row.createdAt || 0), Number(row.completedAt || 0))
+          }
+        }
+        return max
       }
 
       restore.addEventListener('click', async () => {
@@ -206,15 +322,25 @@
 
         restore.disabled = true
         try {
-          setStatus('Comprobando servidor...')
-          const counts = await verifyServer()
-          setStatus(`Servidor OK: ${counts.students} alumnos, ${counts.groups} grupos, ${counts.templates} rubricas. Preparando movil...`)
+          setStatus('1/4 Leyendo copia buena del servidor...')
+          const { backup, updatedAt } = await fetchBackup()
+          const counts = {
+            students: (backup.students || []).length,
+            groups: (backup.classGroups || []).length,
+            templates: (backup.templates || []).length,
+          }
+
+          setStatus(`2/4 Servidor OK: ${counts.students} alumnos, ${counts.groups} grupos, ${counts.templates} rubricas. Limpiando caches...`)
           saveSettings()
-          const deleteResult = await deleteDbWithTimeout()
-          setStatus(`Base local ${deleteResult}. Abriendo app para restaurar...`)
+          await clearCaches()
+
+          setStatus('3/4 Escribiendo la copia buena dentro de este navegador...')
+          await replaceLocalData(backup, updatedAt)
+
+          setStatus(`4/4 Listo: ${counts.students} alumnos y ${counts.templates} rubricas cargados. Abriendo app...`)
           setTimeout(() => {
-            window.location.href = './?v=8#/'
-          }, 900)
+            window.location.href = './?v=9#/'
+          }, 1200)
         } catch (error) {
           setStatus(error.message || String(error))
           restore.disabled = false
@@ -223,7 +349,7 @@
 
       openApp.addEventListener('click', () => {
         saveSettings()
-        window.location.href = './?v=8#/'
+        window.location.href = './?v=9#/'
       })
     </script>
   </body>

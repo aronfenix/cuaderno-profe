@@ -1,4 +1,3 @@
-import { db } from '../db/schema'
 import { exportFullBackup, importFullBackup, isBackupPackage } from './jsonExport'
 
 export interface CloudSyncSettings {
@@ -197,12 +196,12 @@ export async function resetLocalDatabaseFromCloud(
     throw new Error('El servidor devolvio un backup invalido')
   }
 
-  const settings = getCloudSyncSettings()
-  db.close()
-  await db.delete()
-  await db.open()
   await importFullBackup(backup)
-  saveCloudSyncSettings(settings)
+  const imported = await exportFullBackup()
+  if (imported.students.length !== backup.students.length) {
+    throw new Error(`La restauracion no se completo: servidor ${backup.students.length} alumnos, dispositivo ${imported.students.length}.`)
+  }
+
   saveCloudSyncMeta({
     lastCloudUpdatedAt: updatedAt,
     lastLocalDataUpdatedAt: await getLocalDataUpdatedAt(),

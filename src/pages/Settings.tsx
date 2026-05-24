@@ -104,14 +104,14 @@ export function Settings() {
       }
 
       if (action === 'reset') {
-        const accepted = window.confirm('Esto borrara por completo los datos de este dispositivo y los reconstruira con la copia del servidor. No afecta al servidor. Continuar?')
+        const accepted = window.confirm('Esto vaciara los datos de este dispositivo y los reconstruira con la copia del servidor. No afecta al servidor. Continuar?')
         if (!accepted) {
           setCloudMessage('Reset cancelado por el usuario.')
           setWorking(false)
           return
         }
         const status = await resetLocalDatabaseFromCloud(cloud.spaceId.trim(), cloud.secret, cloud.apiBaseUrl)
-        setCloudMessage(`Dispositivo reseteado y restaurado desde servidor (${formatDate(status.updatedAt)}). Recargando app...`)
+        setCloudMessage(`Dispositivo reparado y restaurado desde servidor (${formatDate(status.updatedAt)}). Recargando app...`)
         await refreshCloudHints()
         window.setTimeout(() => window.location.reload(), 900)
       }
@@ -239,7 +239,7 @@ export function Settings() {
             onClick={() => runCloudAction('reset')}
             style={{ marginTop: 'var(--s-3)' }}
           >
-            Resetear este dispositivo y descargar servidor
+            Reparar este dispositivo desde servidor
           </button>
         </div>
 

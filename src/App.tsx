@@ -1,7 +1,8 @@
-﻿import { lazy, Suspense, Component, useEffect, type ReactNode } from 'react'
+﻿import { lazy, Suspense, Component, useEffect, useState, type ReactNode } from 'react'
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { NavBar } from './components/ui/NavBar'
 import { recordRecentPath } from './lib/quickAccess'
+import { MobileRescue } from './pages/MobileRescue'
 
 const Dashboard        = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })))
 const Setup            = lazy(() => import('./pages/Setup').then(m => ({ default: m.Setup })))
@@ -79,9 +80,26 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, EBState> {
 }
 
 function PageLoader() {
+  const [showHelp, setShowHelp] = useState(false)
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setShowHelp(true), 4500)
+    return () => window.clearTimeout(timeoutId)
+  }, [])
+
   return (
     <div className="loading-page">
       <div className="spinner" />
+      {showHelp && (
+        <div style={{ marginTop: 'var(--s-4)', textAlign: 'center', padding: '0 var(--s-4)' }}>
+          <p style={{ color: 'var(--color-text-2)', fontSize: '0.9rem', marginBottom: 'var(--s-3)' }}>
+            Si se queda cargando, abre la recuperacion del movil.
+          </p>
+          <a className="btn btn-primary" href="#/rescue" style={{ textDecoration: 'none' }}>
+            Recuperar datos
+          </a>
+        </div>
+      )}
     </div>
   )
 }
@@ -105,6 +123,7 @@ export default function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/rescue" element={<MobileRescue />} />
               <Route path="/setup" element={<Setup />} />
               <Route path="/checklists" element={<Checklists />} />
               <Route path="/checklists/:sessionId" element={<Checklists />} />
@@ -127,3 +146,4 @@ export default function App() {
     </AppErrorBoundary>
   )
 }
+

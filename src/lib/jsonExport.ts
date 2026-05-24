@@ -139,4 +139,10 @@ export async function importFullBackup(backup: BackupPackage): Promise<void> {
     if (backup.results.length) await db.results.bulkAdd(backup.results as any[])
     if (backup.criterionScores.length) await db.criterionScores.bulkAdd(backup.criterionScores as any[])
   })
+
+  try {
+    localStorage.setItem('cuaderno_initialized', '1')
+  } catch {
+    // If localStorage is unavailable, the imported IndexedDB data is still valid.
+  }
 }

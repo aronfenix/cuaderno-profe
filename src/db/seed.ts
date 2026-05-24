@@ -256,6 +256,13 @@ export async function seedDemoData(): Promise<void> {
   }
   if (initialized) return
 
+  const existingStudents = await db.students.count()
+  const existingGroups = await db.classGroups.count()
+  if (existingStudents > 0 || existingGroups > 0) {
+    localStorage.setItem('cuaderno_initialized', '1')
+    return
+  }
+
   const deviceId = getDeviceId()
   console.log('[seed] Seeding real class data...')
 

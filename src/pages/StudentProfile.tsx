@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/schema'
 import { StudentNotesRepo } from '../db/repos/StudentNotesRepo'
+import { StudentsRepo } from '../db/repos/StudentsRepo'
 import type { StudentNoteType } from '../types'
 import { formatGrade, gradeColor } from '../lib/gradeCalculator'
 
@@ -17,6 +18,8 @@ const NOTE_TYPES: Array<{ value: StudentNoteType; label: string }> = [
   { value: 'seguimiento', label: 'Seguimiento' },
 ]
 
+type StudentTab = 'summary' | 'notes' | 'edit'
+
 export function StudentProfile() {
   const { id } = useParams<{ id: string }>()
   const studentId = Number(id)
@@ -27,6 +30,10 @@ export function StudentProfile() {
   const [subjectId, setSubjectId] = useState('')
   const [groupId, setGroupId] = useState('')
   const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<StudentTab>('summary')
+  const [nameDraft, setNameDraft] = useState('')
+  const [assignGroupId, setAssignGroupId] = useState('')
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
   const student = useLiveQuery(() => db.students.get(studentId), [studentId])
   const enrollments = useLiveQuery(() => db.enrollments.where('studentId').equals(studentId).toArray(), [studentId])
@@ -69,7 +76,10 @@ export function StudentProfile() {
   if (!student) return <div className="page"><p>Alumno no encontrado.</p></div>
 
   const groupMap = new Map(groups?.map(group => [group.id!, group.name]) ?? [])
+  const groupYearMap = new Map(groups?.map(group => [group.id!, group.yearId]) ?? [])
   const groupChips = (enrollments ?? []).map(enrollment => groupMap.get(enrollment.groupId) ?? `Grupo ${enrollment.groupId}`)
+  const enrolledGroupIds = new Set((enrollments ?? []).map(enrollment => enrollment.groupId))
+  const availableGroups = (groups ?? []).filter(group => !enrolledGroupIds.has(group.id!))
 
   const createNote = async () => {
     if (!text.trim() || saving) return
@@ -91,6 +101,32 @@ export function StudentProfile() {
     }
   }
 
+  const saveStudentName = async () => {
+    const nextName = nameDraft.trim()
+    if (!nextName || nextName === student.displayName) return
+    await StudentsRepo.update(studentId, nextName)
+    setStatusMessage('Nombre actualizado.')
+    window.setTimeout(() => setStatusMessage(null), 1800)
+  }
+
+  const assignToGroup = async () => {
+    const nextGroupId = Number(assignGroupId)
+    const yearId = groupYearMap.get(nextGroupId)
+    if (!nextGroupId || !yearId) return
+    await StudentsRepo.enroll(studentId, nextGroupId, yearId)
+    setAssignGroupId('')
+    setStatusMessage('Grupo actualizado.')
+    window.setTimeout(() => setStatusMessage(null), 1800)
+  }
+
+  const removeEnrollment = async (enrollmentId: number) => {
+    const accepted = window.confirm('Quitar este alumno de ese grupo?')
+    if (!accepted) return
+    await StudentsRepo.unenrollById(enrollmentId)
+    setStatusMessage('Alumno quitado del grupo.')
+    window.setTimeout(() => setStatusMessage(null), 1800)
+  }
+
   return (
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-3)', marginBottom: 'var(--s-4)' }}>
@@ -105,7 +141,23 @@ export function StudentProfile() {
         </div>
       </div>
 
-      <div className="section">
+      <div style={{ display: 'flex', gap: 'var(--s-2)', marginBottom: 'var(--s-4)', overflowX: 'auto' }}>
+        {(['summary', 'notes', 'edit'] as const).map(tab => (
+          <button
+            key={tab}
+            className={`btn ${activeTab === tab ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => {
+              setActiveTab(tab)
+              if (tab === 'edit') setNameDraft(student.displayName)
+            }}
+            style={{ whiteSpace: 'nowrap', padding: 'var(--s-2) var(--s-3)', minHeight: 36 }}
+          >
+            {tab === 'summary' ? 'Resumen' : tab === 'notes' ? 'Notas' : 'Editar datos'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'summary' && <div className="section">
         <div className="section-header">
           <span className="section-title">Medias por asignatura</span>
         </div>
@@ -125,9 +177,9 @@ export function StudentProfile() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
-      <div className="section">
+      {activeTab === 'notes' && <div className="section">
         <div className="section-header">
           <span className="section-title">Nueva nota de seguimiento</span>
         </div>
@@ -174,9 +226,9 @@ export function StudentProfile() {
             {saving ? 'Guardando...' : 'Guardar nota'}
           </button>
         </div>
-      </div>
+      </div>}
 
-      <div className="section">
+      {activeTab === 'notes' && <div className="section">
         <div className="section-header">
           <span className="section-title">Historial de notas</span>
         </div>
@@ -214,7 +266,72 @@ export function StudentProfile() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
+
+      {activeTab === 'edit' && (
+        <div className="section">
+          <div className="section-header">
+            <span className="section-title">Editar datos del alumno</span>
+          </div>
+
+          <div className="card" style={{ marginBottom: 'var(--s-4)' }}>
+            <div className="form-group">
+              <label className="form-label">Nombre visible</label>
+              <input
+                className="form-input"
+                value={nameDraft}
+                onChange={event => setNameDraft(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter') void saveStudentName()
+                }}
+                placeholder="Nombre y apellidos"
+              />
+            </div>
+            <button className="btn btn-primary" disabled={!nameDraft.trim() || nameDraft.trim() === student.displayName} onClick={saveStudentName}>
+              Guardar nombre
+            </button>
+            {statusMessage && (
+              <p className="text-sm text-muted" style={{ marginTop: 'var(--s-3)' }}>{statusMessage}</p>
+            )}
+          </div>
+
+          <div className="card">
+            <h2 style={{ fontSize: '1rem', marginBottom: 'var(--s-3)' }}>Grupos</h2>
+            <div className="list" style={{ marginBottom: 'var(--s-4)' }}>
+              {(enrollments ?? []).length === 0 && (
+                <div className="text-sm text-muted">No pertenece a ningun grupo.</div>
+              )}
+              {(enrollments ?? []).map(enrollment => (
+                <div key={enrollment.id} className="list-item" style={{ cursor: 'default', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 600 }}>{groupMap.get(enrollment.groupId) ?? `Grupo ${enrollment.groupId}`}</span>
+                  <button
+                    className="btn btn-danger"
+                    style={{ minHeight: 34, padding: '0.5rem 0.75rem', fontSize: '0.8125rem' }}
+                    onClick={() => removeEnrollment(enrollment.id!)}
+                  >
+                    Quitar
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Anadir a otro grupo</label>
+              <div style={{ display: 'flex', gap: 'var(--s-2)', flexWrap: 'wrap' }}>
+                <select className="form-select" value={assignGroupId} onChange={event => setAssignGroupId(event.target.value)} style={{ flex: 1, minWidth: 180 }}>
+                  <option value="">Selecciona grupo...</option>
+                  {availableGroups.map(group => (
+                    <option key={group.id} value={group.id}>{group.name}</option>
+                  ))}
+                </select>
+                <button className="btn btn-secondary" disabled={!assignGroupId} onClick={assignToGroup}>
+                  Anadir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

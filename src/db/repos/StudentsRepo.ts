@@ -58,6 +58,10 @@ export const StudentsRepo = {
       .delete()
   },
 
+  async unenrollById(enrollmentId: number): Promise<void> {
+    await db.enrollments.delete(enrollmentId)
+  },
+
   async bulkCreate(names: string[], groupId: number, yearId: number): Promise<void> {
     await db.transaction('rw', db.students, db.enrollments, async () => {
       for (const name of names) {

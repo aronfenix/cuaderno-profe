@@ -4,6 +4,9 @@
 /index.html
   Cache-Control: no-store, max-age=0
 
+/rescue.html
+  Cache-Control: no-store, max-age=0
+
 /registerSW.js
   Cache-Control: no-store, max-age=0
 

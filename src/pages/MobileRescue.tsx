@@ -6,14 +6,21 @@ import {
   resetLocalDatabaseFromCloud,
   saveCloudSyncSettings,
 } from '../lib/cloudSync'
+import { FORCE_CLOUD_RESTORE_KEY } from '../lib/startupRecovery'
 
 function deleteIndexedDb(name: string): Promise<void> {
-  return new Promise((resolve, reject) => {
+  const deleteRequest = new Promise<void>((resolve, reject) => {
     const request = indexedDB.deleteDatabase(name)
     request.onsuccess = () => resolve()
     request.onerror = () => reject(request.error)
     request.onblocked = () => resolve()
   })
+
+  const timeout = new Promise<void>(resolve => {
+    window.setTimeout(resolve, 2500)
+  })
+
+  return Promise.race([deleteRequest, timeout])
 }
 
 export function MobileRescue() {
@@ -43,7 +50,9 @@ export function MobileRescue() {
     setMessage('Restaurando desde servidor...')
     try {
       saveCloudSyncSettings(cloud)
+      localStorage.setItem(FORCE_CLOUD_RESTORE_KEY, '1')
       await resetLocalDatabaseFromCloud(cloud.spaceId.trim(), cloud.secret, cloud.apiBaseUrl)
+      localStorage.removeItem(FORCE_CLOUD_RESTORE_KEY)
       setMessage('Datos recuperados. Recargando app...')
       window.setTimeout(() => {
         window.location.hash = '#/'
@@ -61,10 +70,12 @@ export function MobileRescue() {
     setMessage('Limpiando datos locales de este navegador...')
     try {
       saveCloudSyncSettings(cloud)
+      localStorage.setItem(FORCE_CLOUD_RESTORE_KEY, '1')
       db.close()
       await deleteIndexedDb('CuadernoProfe')
       localStorage.removeItem('cuaderno_initialized')
-      setMessage('Dispositivo limpio. Recargando para recuperar desde servidor...')
+      localStorage.removeItem('cloudSyncMeta')
+      setMessage('He lanzado la recuperacion. Recargando para traer la copia del servidor...')
       window.setTimeout(() => window.location.reload(), 900)
     } catch (error) {
       setMessage((error as Error).message)

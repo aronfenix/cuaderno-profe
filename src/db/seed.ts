@@ -256,6 +256,11 @@ export async function seedDemoData(): Promise<void> {
   }
   if (initialized) return
 
+  if (window.location.hostname.includes('cuaderno-profe-x100.pages.dev')) {
+    localStorage.setItem('cuaderno_initialized', '1')
+    return
+  }
+
   const existingStudents = await db.students.count()
   const existingGroups = await db.classGroups.count()
   if (existingStudents > 0 || existingGroups > 0) {

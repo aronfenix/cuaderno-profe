@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import { seedDemoData } from './db/seed'
+import { restoreEmptyLocalDatabaseFromCloud } from './lib/startupRecovery'
 import './styles/global.css'
 
 // Safety: remove stale PWA service workers/cache that can break local upgrades.
@@ -19,8 +20,12 @@ if ('serviceWorker' in navigator) {
   })
 }
 
-// Seed demo data on first launch
-seedDemoData().catch(console.error)
+async function initializeLocalData() {
+  await restoreEmptyLocalDatabaseFromCloud()
+  await seedDemoData()
+}
+
+initializeLocalData().catch(console.error)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

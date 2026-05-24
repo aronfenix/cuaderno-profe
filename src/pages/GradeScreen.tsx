@@ -15,6 +15,14 @@ const QUICK_PHRASES = [
   'Falta profundidad', 'Excelente presentación', 'Buena actitud',
 ]
 
+function scoreButtonLabel(score: Score, scoreScale?: string): string {
+  if (score === null) return 'N/A'
+  if (scoreScale === 'zeroToFull') {
+    return `${Math.round(((score - 1) / 4) * 100)}%`
+  }
+  return String(score)
+}
+
 export function GradeScreen() {
   const { id, studentId } = useParams<{ id: string; studentId: string }>()
   const navigate = useNavigate()
@@ -69,7 +77,7 @@ export function GradeScreen() {
   }, [assessmentId, studentIdNum])
 
   const {
-    result, scores, snapshot, saveScore, finalize, gradeResult, isLoading
+    result, scores, snapshot, saveScore, finalize, finalizeManualGrade, gradeResult, isLoading
   } = useGrading(assessmentId, studentIdNum)
 
   // Sync comment from DB when result loads
@@ -78,6 +86,7 @@ export function GradeScreen() {
   }, [result?.id])
 
   const criteria = snapshot?.data?.criteria ?? []
+  const scoreScale = snapshot?.data?.scale?.scoreScale
   const scoreMap = new Map(scores.map(s => [s.criterionId, s.score]))
 
   const answeredCount = criteria.filter(c => scoreMap.has(c.id)).length
@@ -103,6 +112,23 @@ export function GradeScreen() {
     setFinalizing(true)
     try {
       await finalize(commentText)
+      navigate(`/assessments/${assessmentId}`, { replace: true })
+    } finally {
+      setFinalizing(false)
+    }
+  }
+
+  const handleNoEntrega = async () => {
+    if (finalizing) return
+    const confirmed = window.confirm('Marcar NO ENTREGA y poner un 0 a este alumno?')
+    if (!confirmed) return
+
+    setFinalizing(true)
+    try {
+      const noEntregaComment = commentText.trim()
+        ? `NO ENTREGA. ${commentText.trim()}`
+        : 'NO ENTREGA'
+      await finalizeManualGrade(0, noEntregaComment)
       navigate(`/assessments/${assessmentId}`, { replace: true })
     } finally {
       setFinalizing(false)
@@ -226,7 +252,7 @@ export function GradeScreen() {
                     onClick={() => handleScore(criterion, score, index)}
                     aria-label={`Puntuación ${score}`}
                   >
-                    {score}
+                    {scoreButtonLabel(score, scoreScale)}
                   </button>
                 ))}
                 {snapshot?.data?.scale?.allowNA !== false && (
@@ -300,6 +326,14 @@ export function GradeScreen() {
             Siguiente alumno →
           </button>
         )}
+        <button
+          className="btn btn-danger btn-large"
+          onClick={handleNoEntrega}
+          disabled={finalizing}
+          style={{ marginBottom: 'var(--s-2)' }}
+        >
+          NO ENTREGA · 0
+        </button>
         <button
           className="btn btn-primary btn-large"
           onClick={handleFinalize}

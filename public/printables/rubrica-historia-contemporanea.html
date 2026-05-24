@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rubrica Historia contemporanea</title>
+  <style>
+    :root {
+      color: #111827;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+
+    body {
+      margin: 18px;
+      background: #fff;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .box {
+      border: 1px solid #111827;
+      min-height: 28px;
+      padding: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      border: 1px solid #111827;
+      padding: 6px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #e5e7eb;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .narrow {
+      width: 8%;
+      text-align: center;
+    }
+
+    .points {
+      width: 10%;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .section {
+      width: 10%;
+      font-weight: 700;
+    }
+
+    .criterion {
+      width: 22%;
+      font-weight: 700;
+    }
+
+    .final {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .final .box {
+      min-height: 42px;
+    }
+
+    @media print {
+      body { margin: 10mm; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <button class="no-print" onclick="window.print()">Imprimir</button>
+  <h1>Historia contemporanea - Exposicion oral + entrega escrita</h1>
+  <div>Nota unica sobre 10: oral 7 puntos + escrito 3 puntos. Cada criterio se marca de 0% a 100%.</div>
+
+  <div class="meta">
+    <div class="box">Alumno/a:</div>
+    <div class="box">Grupo:</div>
+    <div class="box">Fecha:</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="section">Parte</th>
+        <th class="criterion">Criterio</th>
+        <th class="points">Puntos</th>
+        <th>0%</th>
+        <th>25%</th>
+        <th>50%</th>
+        <th>75%</th>
+        <th>100%</th>
+        <th class="narrow">Marca</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Oral</td>
+        <td>Adecuacion al tiempo</td>
+        <td class="points">1</td>
+        <td>No respeta el tiempo.</td>
+        <td>Muy corto o muy largo.</td>
+        <td>Algo desajustado.</td>
+        <td>Pequeno desajuste.</td>
+        <td>Tiempo perfecto.</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Oral</td>
+        <td>Expresion y presencia</td>
+        <td class="points">1,5</td>
+        <td>Lee sin comunicar.</td>
+        <td>Depende mucho del papel.</td>
+        <td>Alterna lectura y explicacion.</td>
+        <td>Consulta poco y comunica claro.</td>
+        <td>Domina, mira al publico y vocaliza.</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Oral</td>
+        <td>Discurso preparado</td>
+        <td class="points">1,5</td>
+        <td>No preparado o sin sentido.</td>
+        <td>Confuso o artificial.</td>
+        <td>Comprensible pero plano.</td>
+        <td>Coherente y adecuado para oral.</td>
+        <td>Muy organizado, natural y propio.</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Oral</td>
+        <td>Contenido historico</td>
+        <td class="points">3</td>
+        <td>No explica el contenido.</td>
+        <td>Pobre o con errores claros.</td>
+        <td>Basico, con imprecisiones.</td>
+        <td>Correcto y bien contado.</td>
+        <td>Esencial, riguroso y comprensible.</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Escrito</td>
+        <td>Limpieza, orden y diseno</td>
+        <td class="points">1</td>
+        <td>No presentado o ilegible.</td>
+        <td>Poco limpio/desordenado.</td>
+        <td>Aceptable pero irregular.</td>
+        <td>Limpio y ordenado.</td>
+        <td>Muy cuidado y visual.</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Escrito</td>
+        <td>Informacion y redaccion</td>
+        <td class="points">2</td>
+        <td>Incorrecto o no entregado.</td>
+        <td>Incompleto o mal redactado.</td>
+        <td>Basico pero suficiente.</td>
+        <td>Adecuado y bien redactado.</td>
+        <td>Correcto, apropiado y muy bien redactado.</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="final">
+    <div class="box">NO ENTREGA: 0</div>
+    <div class="box">Total oral (7):</div>
+    <div class="box">Total escrito (3):</div>
+  </div>
+  <div class="final">
+    <div class="box">Nota final /10:</div>
+    <div class="box">Observaciones:</div>
+    <div class="box">Firma:</div>
+  </div>
+</body>
+</html>

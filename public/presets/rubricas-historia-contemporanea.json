@@ -1,0 +1,89 @@
+[
+  {
+    "title": "Historia contemporanea - Exposicion oral + entrega escrita",
+    "description": "Rubrica unica sobre 10 puntos: exposicion oral 7 puntos y entrega escrita 3 puntos. Los niveles van de 0% a 100% en cada criterio.",
+    "tags": ["Historia contemporanea", "Ciencias Sociales", "Oral", "Escrito"],
+    "scale": { "type": "1-5", "allowNA": true, "scoreScale": "zeroToFull" },
+    "finalGrade": { "scale": "1-10", "rounding": "0.5" },
+    "criteria": [
+      {
+        "id": "hist-con-oral-tiempo",
+        "titleShort": "Oral: adecuacion al tiempo",
+        "helpText": "1 punto. Ajuste al tiempo previsto y reparto equilibrado de la exposicion.",
+        "weight": 0.1,
+        "descriptors": {
+          "5": "100%: se ajusta perfectamente al tiempo y reparte bien las partes.",
+          "4": "75%: pequeno desajuste, sin afectar al sentido de la exposicion.",
+          "3": "50%: se queda algo corto o se alarga, con desequilibrio visible.",
+          "2": "25%: muy corto o muy largo; dificulta seguir la exposicion.",
+          "1": "0%: no respeta en absoluto el tiempo o no permite valorar este apartado."
+        }
+      },
+      {
+        "id": "hist-con-oral-expresion",
+        "titleShort": "Oral: expresion y presencia",
+        "helpText": "1,5 puntos. Se lo sabe, mira poco el papel, mira al publico, vocaliza y mantiene presencia oral.",
+        "weight": 0.15,
+        "descriptors": {
+          "5": "100%: domina la exposicion, apenas depende del papel y mira al publico con seguridad.",
+          "4": "75%: se lo sabe bastante, consulta poco y comunica con claridad.",
+          "3": "50%: alterna explicacion y lectura; se entiende, pero con inseguridad.",
+          "2": "25%: depende mucho del papel, mira poco al publico o cuesta seguirle.",
+          "1": "0%: lee sin comunicar, no se entiende o no demuestra preparacion oral."
+        }
+      },
+      {
+        "id": "hist-con-oral-discurso",
+        "titleShort": "Oral: discurso preparado",
+        "helpText": "1,5 puntos. Texto pensado para ser dicho: organizado, coherente, natural y no generico de IA.",
+        "weight": 0.15,
+        "descriptors": {
+          "5": "100%: discurso muy bien organizado, natural y claramente trabajado por el alumno.",
+          "4": "75%: discurso coherente y adecuado para expresion oral, con algun detalle mejorable.",
+          "3": "50%: discurso comprensible pero plano, algo desordenado o demasiado leido.",
+          "2": "25%: discurso confuso, mal adaptado a oralidad o con tono artificial/generico.",
+          "1": "0%: discurso sin sentido, copiado sin adaptacion o claramente no preparado."
+        }
+      },
+      {
+        "id": "hist-con-oral-contenido",
+        "titleShort": "Oral: contenido historico",
+        "helpText": "3 puntos. Selecciona lo importante, lo cuenta bien y sus companeros entienden de que se habla.",
+        "weight": 0.3,
+        "descriptors": {
+          "5": "100%: selecciona lo esencial, lo explica con rigor y la clase entiende claramente el tema.",
+          "4": "75%: contenido correcto y bien contado, con pequenas faltas de profundidad.",
+          "3": "50%: contenido basico; se entiende lo principal, pero faltan claves o hay imprecisiones.",
+          "2": "25%: contenido pobre, mal explicado o con errores que dificultan entender el tema.",
+          "1": "0%: no explica el contenido historico o lo hace de forma incorrecta."
+        }
+      },
+      {
+        "id": "hist-con-escrito-diseno",
+        "titleShort": "Escrito: limpieza, orden y diseno",
+        "helpText": "1 punto. Presentacion visual, limpieza, orden y cuidado formal de la entrega.",
+        "weight": 0.1,
+        "descriptors": {
+          "5": "100%: muy limpio, ordenado y visualmente cuidado.",
+          "4": "75%: limpio y ordenado, con pequenos detalles mejorables.",
+          "3": "50%: presentacion aceptable, aunque simple o irregular.",
+          "2": "25%: desordenado, poco limpio o con escaso cuidado visual.",
+          "1": "0%: no presentado, ilegible o sin cuidado formal."
+        }
+      },
+      {
+        "id": "hist-con-escrito-info",
+        "titleShort": "Escrito: informacion y redaccion",
+        "helpText": "2 puntos. Informacion correcta, bien redactada y apropiada para el tema.",
+        "weight": 0.2,
+        "descriptors": {
+          "5": "100%: informacion correcta, seleccionada con criterio y muy bien redactada.",
+          "4": "75%: informacion adecuada y bien redactada, con algun detalle mejorable.",
+          "3": "50%: informacion basica pero suficiente; redaccion correcta aunque simple.",
+          "2": "25%: informacion incompleta, poco apropiada o con problemas claros de redaccion.",
+          "1": "0%: informacion incorrecta, no apropiada o no entregada."
+        }
+      }
+    ]
+  }
+]

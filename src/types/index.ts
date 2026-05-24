@@ -7,6 +7,7 @@ export type AssessmentStatus = 'draft' | 'active' | 'closed'
 export type ResultStatus = 'pending' | 'in_progress' | 'completed'
 export type LLMStudioState = 'intake' | 'generate' | 'iterate' | 'save'
 export type TemplateSource = 'ai' | 'manual'
+export type ScoreScale = 'oneToFive' | 'zeroToFull'
 export type ChecklistKind = 'attendance' | 'authorization' | 'custom'
 export type ChecklistValue = 'yes' | 'no' | 'na'
 export type StudentNoteType =
@@ -161,7 +162,7 @@ export interface InstrumentTemplate {
   title: string
   description: string
   tags: string[]
-  scale: { type: '1-5'; allowNA: boolean }
+  scale: { type: '1-5'; allowNA: boolean; scoreScale?: ScoreScale }
   finalGrade: { scale: '1-10'; rounding: RoundingMode }
   criteria: Criterion[]
   version: number

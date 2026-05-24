@@ -4,6 +4,7 @@ import { useTemplates } from '../hooks/useTemplates'
 import { TemplatesRepo } from '../db/repos/TemplatesRepo'
 import { parseTemplateJSON, downloadJSON } from '../lib/jsonExport'
 import { BIOGRAFIAS_PACK_TEMPLATES } from '../lib/presets/biografiasPack'
+import { HISTORIA_CONTEMPORANEA_PACK_TEMPLATES } from '../lib/presets/historiaContemporaneaPack'
 import { ConfirmModal } from '../components/ui/ConfirmModal'
 import type { InstrumentTemplate } from '../types'
 
@@ -46,6 +47,25 @@ export function Library() {
     }
   }
 
+  const handleImportHistoriaContemporaneaPack = async () => {
+    try {
+      const existingTitles = new Set(templates.map(template => template.title.trim().toLowerCase()))
+      const toImport = HISTORIA_CONTEMPORANEA_PACK_TEMPLATES.filter(
+        template => !existingTitles.has(template.title.trim().toLowerCase())
+      )
+
+      if (toImport.length === 0) {
+        alert('El pack de Historia contemporanea ya estaba importado.')
+        return
+      }
+
+      await TemplatesRepo.importFromJSON(toImport)
+      alert(`Pack Historia contemporanea importado: ${toImport.length} rubrica(s).`)
+    } catch (err) {
+      alert('No se pudo importar el pack: ' + (err as Error).message)
+    }
+  }
+
   const handleExportAll = async () => {
     const all = await TemplatesRepo.exportToJSON()
     downloadJSON(all, `rubricas-${new Date().toISOString().split('T')[0]}.json`)
@@ -61,8 +81,17 @@ export function Library() {
           <button className="btn btn-secondary" onClick={handleImportBiografiasPack}>
             Pack Biografias
           </button>
+          <button className="btn btn-secondary" onClick={handleImportHistoriaContemporaneaPack}>
+            Pack Historia
+          </button>
           <a className="btn btn-secondary" href="./presets/rubricas-proyecto-biografias.json" download>
-            Descargar pack
+            Descargar biografias
+          </a>
+          <a className="btn btn-secondary" href="./presets/rubricas-historia-contemporanea.json" download>
+            Descargar historia
+          </a>
+          <a className="btn btn-secondary" href="./printables/rubrica-historia-contemporanea.html" target="_blank" rel="noreferrer">
+            Imprimir historia
           </a>
           <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
             Importar JSON
@@ -80,6 +109,7 @@ export function Library() {
           <div className="empty-state-desc">Crea una rubrica con IA o importa un JSON.</div>
           <div style={{ display: 'flex', gap: 'var(--s-3)', justifyContent: 'center', marginTop: 'var(--s-4)', flexWrap: 'wrap' }}>
             <button className="btn btn-secondary" onClick={handleImportBiografiasPack}>Cargar pack Biografias</button>
+            <button className="btn btn-secondary" onClick={handleImportHistoriaContemporaneaPack}>Cargar pack Historia</button>
             <Link to="/studio" className="btn btn-primary">Rubric Studio</Link>
             <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>Importar JSON</button>
           </div>

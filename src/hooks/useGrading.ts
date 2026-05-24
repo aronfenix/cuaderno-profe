@@ -54,7 +54,7 @@ export function useGrading(assessmentId: number, studentId: number) {
   const gradeResult: GradeCalculationResult | null = (() => {
     if (!snapshot?.data?.criteria || !scores) return null
     const rounding: RoundingMode = snapshot.data.finalGrade?.rounding ?? '0.1'
-    return calculateGrade(snapshot.data.criteria, scores, rounding)
+    return calculateGrade(snapshot.data.criteria, scores, rounding, snapshot.data.scale?.scoreScale ?? 'oneToFive')
   })()
 
   const finalize = useCallback(async (comment: string) => {
@@ -68,12 +68,18 @@ export function useGrading(assessmentId: number, studentId: number) {
     await ResultsRepo.reopen(resultId)
   }, [resultId])
 
+  const finalizeManualGrade = useCallback(async (finalGrade: number, comment: string) => {
+    if (resultId === null) return
+    await ResultsRepo.finalize(resultId, finalGrade, comment)
+  }, [resultId])
+
   return {
     result,
     scores: scores ?? [],
     snapshot,
     saveScore,
     finalize,
+    finalizeManualGrade,
     reopen,
     gradeResult,
     isLoading: resultId === null || result === undefined || snapshot === undefined

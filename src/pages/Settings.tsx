@@ -1,4 +1,4 @@
-﻿import { useRef, useState, type ChangeEventHandler } from 'react'
+﻿import { useEffect, useRef, useState, type ChangeEventHandler } from 'react'
 import {
   downloadJSON,
   exportFullBackup,
@@ -7,16 +7,27 @@ import {
 } from '../lib/jsonExport'
 import { getLLMSettings, saveLLMSettings } from '../lib/llm/LLMProvider'
 import {
+  DEFAULT_CLOUD_API_BASE_URL,
+  getCloudSyncMeta,
   getCloudStatus,
   getCloudSyncSettings,
+  getPendingLocalChanges,
   restoreBackupFromCloud,
   saveCloudSyncSettings,
+  smartSync,
   uploadCurrentBackup,
 } from '../lib/cloudSync'
+
+function formatDate(timestamp: number): string {
+  if (!timestamp) return 'Nunca'
+  return new Date(timestamp).toLocaleString('es-ES')
+}
 
 export function Settings() {
   const [settings, setSettings] = useState(getLLMSettings)
   const [cloud, setCloud] = useState(getCloudSyncSettings)
+  const [cloudMeta, setCloudMeta] = useState(getCloudSyncMeta)
+  const [hasPendingLocalChanges, setHasPendingLocalChanges] = useState<boolean | null>(null)
   const [saved, setSaved] = useState(false)
   const [cloudMessage, setCloudMessage] = useState<string | null>(null)
   const [backupMessage, setBackupMessage] = useState<string | null>(null)
@@ -24,32 +35,58 @@ export function Settings() {
   const [backupWorking, setBackupWorking] = useState(false)
   const backupInputRef = useRef<HTMLInputElement | null>(null)
 
+  const refreshCloudHints = async () => {
+    try {
+      setHasPendingLocalChanges(await getPendingLocalChanges())
+      setCloudMeta(getCloudSyncMeta())
+    } catch {
+      setHasPendingLocalChanges(null)
+    }
+  }
+
+  useEffect(() => {
+    void refreshCloudHints()
+  }, [])
+
   const handleSaveLocalSettings = () => {
     saveLLMSettings(settings)
     saveCloudSyncSettings(cloud)
+    setCloud(getCloudSyncSettings())
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const runCloudAction = async (action: 'status' | 'upload' | 'download') => {
+  const runCloudAction = async (action: 'smart' | 'status' | 'upload' | 'download') => {
     if (!cloud.spaceId.trim() || !cloud.secret.trim()) {
       setCloudMessage('Define espacio docente y clave antes de usar la sincronizacion.')
       return
     }
 
     saveCloudSyncSettings(cloud)
+    setCloud(getCloudSyncSettings())
     setWorking(true)
     setCloudMessage(null)
 
     try {
+      if (action === 'smart') {
+        const result = await smartSync(cloud.spaceId.trim(), cloud.secret, cloud.apiBaseUrl)
+        setCloudMessage(`${result.message} Fecha servidor: ${formatDate(result.updatedAt)}`)
+        await refreshCloudHints()
+        if (result.action === 'downloaded') {
+          window.setTimeout(() => window.location.reload(), 900)
+        }
+        return
+      }
+
       if (action === 'status') {
         const status = await getCloudStatus(cloud.spaceId.trim(), cloud.apiBaseUrl)
-        setCloudMessage(`Servidor OK. Ultima actualizacion: ${new Date(status.updatedAt).toLocaleString('es-ES')}`)
+        setCloudMessage(`Servidor OK. Ultima actualizacion: ${formatDate(status.updatedAt)}`)
       }
 
       if (action === 'upload') {
         const status = await uploadCurrentBackup(cloud.spaceId.trim(), cloud.secret, cloud.apiBaseUrl)
-        setCloudMessage(`Copia subida correctamente. Fecha servidor: ${new Date(status.updatedAt).toLocaleString('es-ES')}`)
+        setCloudMessage(`Copia subida correctamente. Fecha servidor: ${formatDate(status.updatedAt)}`)
+        await refreshCloudHints()
       }
 
       if (action === 'download') {
@@ -60,7 +97,9 @@ export function Settings() {
           return
         }
         const status = await restoreBackupFromCloud(cloud.spaceId.trim(), cloud.secret, cloud.apiBaseUrl)
-        setCloudMessage(`Datos restaurados desde servidor (${new Date(status.updatedAt).toLocaleString('es-ES')}). Recarga la app para ver todo actualizado.`)
+        setCloudMessage(`Datos restaurados desde servidor (${formatDate(status.updatedAt)}). Recargando app...`)
+        await refreshCloudHints()
+        window.setTimeout(() => window.location.reload(), 900)
       }
     } catch (error) {
       setCloudMessage((error as Error).message)
@@ -104,6 +143,7 @@ export function Settings() {
       }
 
       await importFullBackup(parsed)
+      await refreshCloudHints()
       setBackupMessage('Backup importado correctamente. Recargando app...')
       window.setTimeout(() => window.location.reload(), 700)
     } catch (error) {
@@ -150,18 +190,39 @@ export function Settings() {
       </div>
 
       <div className="card" style={{ marginBottom: 'var(--s-4)' }}>
-        <h2 style={{ fontSize: '1rem', marginBottom: 'var(--s-4)' }}>Sincronizacion con servidor</h2>
+        <h2 style={{ fontSize: '1rem', marginBottom: 'var(--s-3)' }}>Sincronizacion con servidor</h2>
+
+        <div style={{
+          padding: 'var(--s-3)',
+          borderRadius: 14,
+          background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.10), rgba(14, 165, 233, 0.08))',
+          border: '1px solid rgba(37, 99, 235, 0.16)',
+          marginBottom: 'var(--s-4)',
+        }}>
+          <p style={{ fontSize: '0.92rem', color: 'var(--color-text)', marginBottom: 'var(--s-2)', fontWeight: 700 }}>
+            Flujo recomendado: pulsa este boton despues de cambiar datos en cualquier dispositivo.
+          </p>
+          <p style={{ fontSize: '0.84rem', color: 'var(--color-text-2)', marginBottom: 'var(--s-3)', lineHeight: 1.55 }}>
+            Si este dispositivo tiene cambios nuevos, los sube. Si el servidor tiene una copia mas nueva, la descarga y recarga la app.
+          </p>
+          <button className="btn btn-primary" disabled={working} onClick={() => runCloudAction('smart')}>
+            {working ? 'Sincronizando...' : 'Sincronizar ahora'}
+          </button>
+          <p style={{ fontSize: '0.78rem', color: 'var(--color-muted)', marginTop: 'var(--s-2)' }}>
+            Cambios locales pendientes: {hasPendingLocalChanges === null ? 'sin comprobar' : hasPendingLocalChanges ? 'si' : 'no'} - Ultima sincronizacion: {formatDate(cloudMeta.lastSyncAt)}
+          </p>
+        </div>
 
         <div className="form-group">
-          <label className="form-label">URL base del servidor (opcional)</label>
+          <label className="form-label">URL base del servidor</label>
           <input
             className="form-input"
             value={cloud.apiBaseUrl}
             onChange={event => setCloud(prev => ({ ...prev, apiBaseUrl: event.target.value }))}
-            placeholder="https://cuaderno-profe-sync.tuusuario.workers.dev"
+            placeholder={DEFAULT_CLOUD_API_BASE_URL}
           />
           <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginTop: 'var(--s-1)' }}>
-            Si lo dejas vacio, usa el mismo dominio de la app. Para backend externo gratis (Cloudflare), pega aqui su URL.
+            Ya esta configurada con tu servidor gratuito de Cloudflare. Solo cambiala si migramos el backend.
           </p>
         </div>
 
@@ -174,7 +235,7 @@ export function Settings() {
             placeholder="ej: ceip-peru-6primaria"
           />
           <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginTop: 'var(--s-1)' }}>
-            Identificador compartido para tu cuaderno en servidor.
+            Debe ser el mismo en el PC y en el movil.
           </p>
         </div>
 
@@ -190,17 +251,22 @@ export function Settings() {
           />
         </div>
 
-        <div style={{ display: 'flex', gap: 'var(--s-2)', flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary" disabled={working} onClick={() => runCloudAction('status')}>
-            Comprobar estado
-          </button>
-          <button className="btn btn-primary" disabled={working} onClick={() => runCloudAction('upload')}>
-            Subir copia local
-          </button>
-          <button className="btn btn-danger" disabled={working} onClick={() => runCloudAction('download')}>
-            Descargar y restaurar
-          </button>
-        </div>
+        <details style={{ marginTop: 'var(--s-3)' }}>
+          <summary style={{ cursor: 'pointer', color: 'var(--color-text-2)', fontSize: '0.88rem', fontWeight: 700 }}>
+            Opciones manuales avanzadas
+          </summary>
+          <div style={{ display: 'flex', gap: 'var(--s-2)', flexWrap: 'wrap', marginTop: 'var(--s-3)' }}>
+            <button className="btn btn-secondary" disabled={working} onClick={() => runCloudAction('status')}>
+              Comprobar estado
+            </button>
+            <button className="btn btn-secondary" disabled={working} onClick={() => runCloudAction('upload')}>
+              Forzar subir copia local
+            </button>
+            <button className="btn btn-danger" disabled={working} onClick={() => runCloudAction('download')}>
+              Forzar descargar y restaurar
+            </button>
+          </div>
+        </details>
 
         {cloudMessage && (
           <p style={{ marginTop: 'var(--s-3)', fontSize: '0.875rem', color: 'var(--color-text-2)' }}>
@@ -253,5 +319,4 @@ export function Settings() {
     </div>
   )
 }
-
 

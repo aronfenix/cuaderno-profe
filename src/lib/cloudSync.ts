@@ -1,3 +1,4 @@
+import { db } from '../db/schema'
 import { exportFullBackup, importFullBackup, isBackupPackage } from './jsonExport'
 
 export interface CloudSyncSettings {
@@ -178,6 +179,30 @@ export async function restoreBackupFromCloud(spaceId: string, secret: string, ap
     throw new Error('El servidor devolvio un backup invalido')
   }
   await importFullBackup(backup)
+  saveCloudSyncMeta({
+    lastCloudUpdatedAt: updatedAt,
+    lastLocalDataUpdatedAt: await getLocalDataUpdatedAt(),
+    lastSyncAt: Date.now(),
+  })
+  return { updatedAt }
+}
+
+export async function resetLocalDatabaseFromCloud(
+  spaceId: string,
+  secret: string,
+  apiBaseUrl: string
+): Promise<CloudStatus> {
+  const { backup, updatedAt } = await downloadBackup(spaceId, secret, apiBaseUrl)
+  if (!isBackupPackage(backup)) {
+    throw new Error('El servidor devolvio un backup invalido')
+  }
+
+  const settings = getCloudSyncSettings()
+  db.close()
+  await db.delete()
+  await db.open()
+  await importFullBackup(backup)
+  saveCloudSyncSettings(settings)
   saveCloudSyncMeta({
     lastCloudUpdatedAt: updatedAt,
     lastLocalDataUpdatedAt: await getLocalDataUpdatedAt(),

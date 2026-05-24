@@ -12,6 +12,7 @@ import {
   getCloudStatus,
   getCloudSyncSettings,
   getPendingLocalChanges,
+  resetLocalDatabaseFromCloud,
   restoreBackupFromCloud,
   saveCloudSyncSettings,
   smartSync,
@@ -56,7 +57,7 @@ export function Settings() {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const runCloudAction = async (action: 'smart' | 'status' | 'upload' | 'download') => {
+  const runCloudAction = async (action: 'smart' | 'status' | 'upload' | 'download' | 'reset') => {
     if (!cloud.spaceId.trim() || !cloud.secret.trim()) {
       setCloudMessage('Define espacio docente y clave antes de usar la sincronizacion.')
       return
@@ -98,6 +99,19 @@ export function Settings() {
         }
         const status = await restoreBackupFromCloud(cloud.spaceId.trim(), cloud.secret, cloud.apiBaseUrl)
         setCloudMessage(`Datos restaurados desde servidor (${formatDate(status.updatedAt)}). Recargando app...`)
+        await refreshCloudHints()
+        window.setTimeout(() => window.location.reload(), 900)
+      }
+
+      if (action === 'reset') {
+        const accepted = window.confirm('Esto borrara por completo los datos de este dispositivo y los reconstruira con la copia del servidor. No afecta al servidor. Continuar?')
+        if (!accepted) {
+          setCloudMessage('Reset cancelado por el usuario.')
+          setWorking(false)
+          return
+        }
+        const status = await resetLocalDatabaseFromCloud(cloud.spaceId.trim(), cloud.secret, cloud.apiBaseUrl)
+        setCloudMessage(`Dispositivo reseteado y restaurado desde servidor (${formatDate(status.updatedAt)}). Recargando app...`)
         await refreshCloudHints()
         window.setTimeout(() => window.location.reload(), 900)
       }
@@ -219,6 +233,14 @@ export function Settings() {
           <p style={{ fontSize: '0.78rem', color: 'var(--color-muted)', marginTop: 'var(--s-1)' }}>
             Si un movil se queda con datos antiguos, usa el boton rojo: fuerza la copia buena del servidor en este dispositivo.
           </p>
+          <button
+            className="btn btn-danger"
+            disabled={working}
+            onClick={() => runCloudAction('reset')}
+            style={{ marginTop: 'var(--s-3)' }}
+          >
+            Resetear este dispositivo y descargar servidor
+          </button>
         </div>
 
         <div className="form-group">

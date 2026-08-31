@@ -3,6 +3,21 @@ dist/
 data/
 backups/
 outputs/
+
+# AulaOS runtime data: never commit real classroom data
+private/
+operational/
+inbox/
+exports/
+*.sqlite
+*.sqlite3
+*.db
+*.m4a
+*.mp3
+*.wav
+*.ogg
+*.webm
+
 .env
 .env.local
 .env.*.local

@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aulaos.local/contracts/transcript.schema.json",
+  "title": "AulaOS Transcript Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "note_id",
+    "variant",
+    "text",
+    "created_at",
+    "pii_review_status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "note_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "variant": {
+      "type": "string",
+      "enum": ["raw", "work"]
+    },
+    "source_transcript_id": {
+      "type": ["string", "null"]
+    },
+    "text": {
+      "type": "string"
+    },
+    "language": {
+      "type": ["string", "null"]
+    },
+    "asr_model": {
+      "type": ["string", "null"]
+    },
+    "asr_compute_type": {
+      "type": ["string", "null"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "pii_review_status": {
+      "type": "string",
+      "enum": ["not_applicable", "clean", "uncertain", "reviewed"]
+    },
+    "externally_exportable": {
+      "type": "boolean",
+      "default": false
+    },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_seconds", "end_seconds", "text"],
+        "properties": {
+          "start_seconds": {"type": "number", "minimum": 0},
+          "end_seconds": {"type": "number", "minimum": 0},
+          "text": {"type": "string"}
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"variant": {"const": "raw"}},
+        "required": ["variant"]
+      },
+      "then": {
+        "properties": {
+          "source_transcript_id": {"type": "null"},
+          "pii_review_status": {"const": "not_applicable"},
+          "externally_exportable": {"const": false}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"variant": {"const": "work"}},
+        "required": ["variant"]
+      },
+      "then": {
+        "required": ["source_transcript_id"],
+        "properties": {
+          "source_transcript_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"pii_review_status": {"const": "uncertain"}},
+        "required": ["pii_review_status"]
+      },
+      "then": {
+        "properties": {
+          "externally_exportable": {"const": false}
+        }
+      }
+    }
+  ]
+}

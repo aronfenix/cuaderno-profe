@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aulaos.local/contracts/pseudonymization.schema.json",
+  "title": "AulaOS Pseudonymization Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_transcript_id",
+    "work_text",
+    "replacements",
+    "unresolved_candidates",
+    "pii_review_status"
+  ],
+  "properties": {
+    "source_transcript_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "work_text": {
+      "type": "string"
+    },
+    "replacements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["original", "replacement", "student_code", "match_type"],
+        "properties": {
+          "original": {"type": "string", "minLength": 1},
+          "replacement": {"type": "string", "minLength": 1},
+          "student_code": {"type": "string", "minLength": 1},
+          "match_type": {
+            "type": "string",
+            "enum": ["exact_alias", "normalized_alias", "confirmed_asr_alias"]
+          }
+        }
+      }
+    },
+    "unresolved_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "reason"],
+        "properties": {
+          "text": {"type": "string", "minLength": 1},
+          "reason": {
+            "type": "string",
+            "enum": [
+              "possible_person_name",
+              "ambiguous_alias",
+              "unknown_capitalized_token",
+              "manual_flag"
+            ]
+          },
+          "start_char": {"type": ["integer", "null"], "minimum": 0},
+          "end_char": {"type": ["integer", "null"], "minimum": 0},
+          "candidate_student_codes": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "pii_review_status": {
+      "type": "string",
+      "enum": ["clean", "uncertain", "reviewed"]
+    }
+  }
+}
